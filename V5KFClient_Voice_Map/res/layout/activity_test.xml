@@ -1,0 +1,45 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.v5kf.client.WelcomeActivity" >
+    
+    <include
+        android:id="@+id/common_actionbar"
+        layout="@layout/v5_include_action_bar" />
+    
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingBottom="@dimen/v5_activity_vertical_margin"
+	    android:paddingLeft="@dimen/v5_activity_horizontal_margin"
+	    android:paddingRight="@dimen/v5_activity_horizontal_margin"
+	    android:paddingTop="@dimen/v5_activity_vertical_margin"
+	    android:orientation="vertical" >
+
+	    <TextView
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="@string/v5_chat_title" />
+	
+	    <Button
+	        android:id="@+id/btn_goto_chat"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:text="@string/v5_btn_goto_chat" />
+	    
+	    <EditText
+	        android:id="@+id/et_uid"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:hint="@string/v5_hint_uid" />
+	    
+	    <Button
+	        android:id="@+id/btn_change_uid"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:text="@string/v5_btn_change_uid" />
+
+    </LinearLayout>
+</LinearLayout>

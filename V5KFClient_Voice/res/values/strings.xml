@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">V5客服SDK</string>
+	<string name="v5_btn_change_uid">切换用户</string>
+	<string name="v5_hint_uid">请输入用户ID</string>
+</resources>
