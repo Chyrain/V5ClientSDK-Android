@@ -1,11 +1,15 @@
 package com.v5kf.client.ui.keyboard;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+
+import com.v5kf.client.lib.Logger;
+import com.v5kf.client.ui.utils.UIUtil;
 
 public class AutoHeightLayout extends ResizeLayout implements ResizeLayout.OnResizeListener {
 
@@ -25,14 +29,20 @@ public class AutoHeightLayout extends ResizeLayout implements ResizeLayout.OnRes
 
     protected Context mContext;
     protected int mAutoHeightLayoutId;
-    protected int mAutoViewHeight;
+    protected int mAutoViewHeight; // 单位dp
     protected View mAutoHeightLayoutView;
     protected int mKeyboardState = KEYBOARD_STATE_NONE;
+	private int mOrientation = 0; // 当前状态横竖屏
 
     public AutoHeightLayout(Context context, AttributeSet attrs) {
         super(context, attrs);
         this.mContext = context;
-        mAutoViewHeight = Utils.getDefKeyboardHeight(mContext);
+        if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+			mAutoViewHeight = Utils.getDefKeyboardHeight(mContext);
+		} else if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+			mAutoViewHeight = Utils.px2dip(context, UIUtil.getScreenHeight(context)/2 - 50);
+		}
+//        Logger.d("AutoHeoghtLayout", "orientation mAutoViewHeight(dp):" + mAutoViewHeight);
         setOnResizeListener(this);
     }
 
@@ -68,11 +78,19 @@ public class AutoHeightLayout extends ResizeLayout implements ResizeLayout.OnRes
         mAutoHeightLayoutView = view;
     }
 
+    /**
+     * px
+     * @param height px
+     */
     public void setAutoViewHeight(final int height) {
+    	Logger.w("AutoHeightLayout", "orientation setAutoViewHeight(dp):" + Utils.px2dip(getContext(), height));
         int heightDp = Utils.px2dip(mContext, height);
         if (heightDp > 0 && heightDp != mAutoViewHeight) {
             mAutoViewHeight = heightDp;
-            Utils.setDefKeyboardHeight(mContext, mAutoViewHeight);
+            // TODO
+            if (mOrientation == Configuration.ORIENTATION_PORTRAIT) { // 竖屏
+            	Utils.setDefKeyboardHeight(mContext, mAutoViewHeight); //dp
+            }
         }
 
         if (mAutoHeightLayoutView != null) {
@@ -130,4 +148,13 @@ public class AutoHeightLayout extends ResizeLayout implements ResizeLayout.OnRes
             }
         });
     }
+    
+    // TODO
+    public void setOrientation(int orientation) {
+		this.mOrientation = orientation;
+	}
+
+	public int getOrientation() {
+		return mOrientation;
+	}
 }

@@ -170,7 +170,7 @@ public class DBHelper {
             }
             sql = sql + TableColumns.EmoticonSetColumns.NAME + " = '" + setNames[i] + "' ";
         }
-        return queryEmoticonSet(sql);
+        return queryEmoticonSet(sql, false);
     }
 
     public ArrayList<EmoticonSetBean> queryEmoticonSet(ArrayList<String> setNameList) {
@@ -186,15 +186,15 @@ public class DBHelper {
             sql = sql + TableColumns.EmoticonSetColumns.NAME + " = '" + name + "' ";
             i++;
         }
-        return queryEmoticonSet(sql);
+        return queryEmoticonSet(sql, false);
     }
 
-    public ArrayList<EmoticonSetBean> queryAllEmoticonSet() {
+    public ArrayList<EmoticonSetBean> queryAllEmoticonSet(boolean isLandscape) {
         String sql = "select * from " + TABLE_NAME_EMOTICONSET;
-        return queryEmoticonSet(sql);
+        return queryEmoticonSet(sql, isLandscape);
     }
 
-    public ArrayList<EmoticonSetBean> queryEmoticonSet(String sql) {
+    public ArrayList<EmoticonSetBean> queryEmoticonSet(String sql, boolean isLandscape) {
         Cursor cursor = null;
         try {
             cursor = db.rawQuery(sql, null);
@@ -227,6 +227,11 @@ public class DBHelper {
 //                    }
 
                     EmoticonSetBean bean = new EmoticonSetBean(name, line, row, iconUri, iconName, isshowdelbtn, itempadding, horizontalspacing, verticalSpacing, emoticonList);
+                    // TODO
+                    if (isLandscape) {
+                    	bean.setRow(KeyboardConfig.EMOICON_ROW_LANDSCAPE);
+                    	bean.setLine(KeyboardConfig.EMOICON_LINE_LANDSCAPE);
+                    }
                     beanList.add(bean);
                     cursor.moveToNext();
                 }

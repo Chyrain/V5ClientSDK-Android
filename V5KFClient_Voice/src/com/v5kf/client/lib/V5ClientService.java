@@ -574,14 +574,14 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 				} else if (error.getMessage().toLowerCase(Locale.getDefault()).contains("timed out") ||
 						error.getMessage().toLowerCase(Locale.getDefault()).contains("timeout") ||
 						error.getMessage().toLowerCase(Locale.getDefault()).contains("time out")) { // 条件不充足
-					if (mClient.getStatusCode() == 101) {
-						V5ClientAgent.getInstance().errorHandle(new V5KFException(V5ExceptionStatus.ExceptionNoNetwork, "no network"));
-					} else {
+//					if (mClient.getStatusCode() == 101) { // 已连接再出错
+//						V5ClientAgent.getInstance().errorHandle(new V5KFException(V5ExceptionStatus.ExceptionNoNetwork, "no network"));
+//					} else {
 						V5ClientAgent.getInstance().errorHandle(new V5KFException(
 								V5ExceptionStatus.ExceptionSocketTimeout, "[" + mClient.getStatusCode() + "]" + error.getMessage()));
-					}
+//					}
 				} else {
-					connectWebsocket();
+					//connectWebsocket(); //[修改]取消自动重连(死循环),在Activity中处理
 					V5ClientAgent.getInstance().errorHandle(new V5KFException(
 							V5ExceptionStatus.ExceptionConnectionError, "[" + mClient.getStatusCode() + "]" + error.getMessage()));
 				}

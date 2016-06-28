@@ -179,6 +179,7 @@ public class DBHelper extends SQLiteOpenHelper {
     protected long insert(ContentValues values) {
         // 获得SQLiteDatabase实例
         SQLiteDatabase db = getWritableDatabase();
+        
         // 插入
         long id = db.insert(mTableName, null, values);
         Logger.d("DBHelper", "Insert ID:" + id);
@@ -231,11 +232,15 @@ public class DBHelper extends SQLiteOpenHelper {
     	SQLiteDatabase db = getWritableDatabase();
         Cursor c = db.rawQuery("select _id from " + mTableName, null);
         if (c.moveToNext()) {
-        	c.close();
+        	if(c != null && !c.isClosed()){
+                c.close();
+            }
         	close();
         	return true;
         } else {
-        	c.close();
+        	if(c != null && !c.isClosed()){
+                c.close();
+            }
         	close();        	
         	return false;
         }
@@ -246,11 +251,15 @@ public class DBHelper extends SQLiteOpenHelper {
     	Cursor c = db.rawQuery("select _id from " + mTableName + 
     			" where json_content='" + jsContent.replaceAll("'", "''") + "'", null);
     	if (c.moveToNext()) {
-    		c.close();
+    		if(c != null && !c.isClosed()){
+                c.close();
+            }
     		close();
     		return true;
     	} else {
-    		c.close();
+    		if(c != null && !c.isClosed()){
+                c.close();
+            }
     		close();        	
     		return false;
     	}
@@ -264,11 +273,15 @@ public class DBHelper extends SQLiteOpenHelper {
     	Cursor c = db.rawQuery("select _id from " + mTableName + 
     			" where message_id='" + messageId + "'", null);
     	if (c.moveToNext()) {
-    		c.close();
+    		if(c != null && !c.isClosed()){
+                c.close();
+            }
     		close();
     		return true;
     	} else {
-    		c.close();
+    		if(c != null && !c.isClosed()){
+                c.close();
+            }
     		close();        	
     		return false;
     	}
@@ -325,7 +338,9 @@ public class DBHelper extends SQLiteOpenHelper {
 				e.printStackTrace();
 			}
 		}
-    	cur.close();
+    	if(cur != null && !cur.isClosed()){
+            cur.close();
+        }
     	close();
     }
 
@@ -338,7 +353,7 @@ public class DBHelper extends SQLiteOpenHelper {
 	public boolean querySession(List<V5Message> msgs, int offset, int size) {
 		Logger.d("DBHelper", "[querySession] offset:" + offset + " size:" + size);
 		// 获得SQLiteDatabase实例
-    	SQLiteDatabase db = getWritableDatabase();
+    	SQLiteDatabase db = getReadableDatabase();
     	// 查询获得Cursor
 //    	Cursor cur = db.rawQuery("select * from " + mTableName + " order by _id desc, create_time desc," +
 //    			" direction desc limit " + size + " offset " + offset, null);
@@ -362,7 +377,7 @@ public class DBHelper extends SQLiteOpenHelper {
 				continue;
 			}
 			try {
-				Logger.d("DBHelper", "[querySession] create_time:" + createTime + " json_content:" + content);
+//				Logger.d("DBHelper", "[querySession] create_time:" + createTime + " json_content:" + content);
 				JSONObject jsonMsg = new JSONObject(content);
 				V5Message message = V5MessageManager.getInstance().receiveMessage(jsonMsg);
 				message.setHit(hit);
@@ -375,7 +390,9 @@ public class DBHelper extends SQLiteOpenHelper {
 				e.printStackTrace();
 			}
 		}
-    	cur.close();
+    	if(cur != null && !cur.isClosed()){
+            cur.close();
+        }
     	close();
     	
     	return finish;
@@ -405,7 +422,7 @@ public class DBHelper extends SQLiteOpenHelper {
 				continue;
 			}
 			try {
-				Logger.d("DBHelper", "[queryAll] json_content:" + content);
+//				Logger.d("DBHelper", "[queryAll] json_content:" + content);
 				JSONObject jsonMsg = new JSONObject(content);
 				V5Message message = V5MessageManager.getInstance().receiveMessage(jsonMsg);
 				message.setHit(hit);
@@ -445,8 +462,9 @@ public class DBHelper extends SQLiteOpenHelper {
         }
         // 执行删除
     	db.delete(mTableName, null, null);
-    	db.close();
-    	db = null;
+//    	db.close();
+//    	db = null;
+    	close();
     }
     
     /*
@@ -455,7 +473,7 @@ public class DBHelper extends SQLiteOpenHelper {
     @Override
     public void close() {
     	super.close();
-        if(db != null) {
+        if(db != null && db.isOpen()) {
             db.close();
             db = null;
         }

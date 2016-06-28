@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.support.v4.view.PagerAdapter;
@@ -28,6 +29,7 @@ public class AppFuncPageView extends ViewPager {
     
     private FuncItemClickListener mFuncItemClickListener;
 	private EmoticonsIndicatorView mIndicatorView;
+	private int mOrientation = 0;
 
     public AppFuncPageView(Context context) {
         this(context, null);
@@ -82,8 +84,13 @@ public class AppFuncPageView extends ViewPager {
 
             if (mAppBeanList != null) {
                 int emoticonSetSum = mAppBeanList.size();
-                int row = 4;
-                int line = 2;
+                int row = KeyboardConfig.APPFUNC_ROW_PORTRAIT;
+                int line = KeyboardConfig.APPFUNC_LINE_PORTRAIT;
+                // TODO
+                if (mOrientation == Configuration.ORIENTATION_LANDSCAPE) { // 横屏
+                	row = KeyboardConfig.APPFUNC_ROW_LANDSCAPE;
+                	line = KeyboardConfig.APPFUNC_LINE_LANDSCAPE;
+                }
 
                 int everyPageMaxSum = row * line;
                 int pageCount = getItemCount();
@@ -149,8 +156,13 @@ public class AppFuncPageView extends ViewPager {
     private int getItemCount() {
     	if (mAppBeanList == null) {
     		return 0;
-    	}    	
-		return mAppBeanList.size() / 8 + (mAppBeanList.size() % 8 > 0 ? 1 : 0);
+    	}
+    	// TODO
+    	int total = KeyboardConfig.APPFUNC_LINE_PORTRAIT * KeyboardConfig.APPFUNC_ROW_PORTRAIT;
+    	if (mOrientation == Configuration.ORIENTATION_LANDSCAPE) {
+    		total = KeyboardConfig.APPFUNC_LINE_LANDSCAPE * KeyboardConfig.APPFUNC_ROW_LANDSCAPE;
+    	}
+		return mAppBeanList.size() / total + (mAppBeanList.size() % total > 0 ? 1 : 0);
 	}
 
 	public void setPageSelect(int position) {
@@ -200,6 +212,14 @@ public class AppFuncPageView extends ViewPager {
 
 	public void setFuncItemClickListener(FuncItemClickListener mFuncItemClickListener) {
 		this.mFuncItemClickListener = mFuncItemClickListener;
+	}
+
+	public int getOrientation() {
+		return mOrientation;
+	}
+
+	public void setOrientation(int mOrientation) {
+		this.mOrientation = mOrientation;
 	}
 
 }

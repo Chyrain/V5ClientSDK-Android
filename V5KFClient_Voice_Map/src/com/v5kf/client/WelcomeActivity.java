@@ -1,9 +1,16 @@
 package com.v5kf.client;
 
+import java.util.ArrayList;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
+import android.content.Context;
+import android.media.AudioManager;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -15,12 +22,16 @@ import android.widget.Toast;
 
 import com.v5kf.client.lib.Logger;
 import com.v5kf.client.lib.V5ClientAgent;
+import com.v5kf.client.lib.V5ClientAgent.ClientLinkType;
 import com.v5kf.client.lib.V5ClientAgent.ClientOpenMode;
 import com.v5kf.client.lib.V5ClientAgent.ClientServingStatus;
 import com.v5kf.client.lib.V5ClientConfig;
+import com.v5kf.client.lib.entity.V5ArticleBean;
+import com.v5kf.client.lib.entity.V5ArticlesMessage;
 import com.v5kf.client.lib.entity.V5Message;
 import com.v5kf.client.ui.ClientChatActivity;
 import com.v5kf.client.ui.callback.OnChatActivityListener;
+import com.v5kf.client.ui.callback.OnURLClickListener;
 import com.v5kf.client.ui.callback.UserWillSendMessageListener;
 
 public class WelcomeActivity extends Activity implements OnChatActivityListener {
@@ -31,6 +42,7 @@ public class WelcomeActivity extends Activity implements OnChatActivityListener 
 	private EditText mUidEt;
 	
 	private boolean flag_userBrowseSomething = true; // 浏览某商品标志
+	private boolean onceFlag = false; // 一次性标识
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -43,15 +55,15 @@ public class WelcomeActivity extends Activity implements OnChatActivityListener 
 		// V5客服系统客户端配置
         V5ClientConfig config = V5ClientConfig.getInstance(WelcomeActivity.this);
         V5ClientConfig.USE_HTTPS = false; // 使用加密连接，默认true
-        V5ClientConfig.DEBUG = true;
+        V5ClientConfig.DEBUG = false;
         config.setShowLog(true); // 显示日志，默认为true
         config.setLogLevel(V5ClientConfig.LOG_LV_DEBUG); // 显示日志级别，默认为全部显示
         
-        //config.setNickname("android_sdk_chyrain"); // 设置用户昵称，不设置会默认生成
+        config.setNickname("android_sdk_chyrain昵称就是要长一点"); // 设置用户昵称，不设置会默认生成
         config.setGender(1); // 设置用户性别: 0-未知  1-男  2-女
         // 设置用户头像URL
 		config.setAvatar("http://debugimg-10013434.image.myqcloud.com/fe1382d100019cfb572b1934af3d2c04/thumbnail"); 
-        //config.setUid("android_sdk_chyrain"); // 设置用户ID
+        config.setUid("android_sdk_chyrain"); // 设置用户ID
         //config.setDeviceToken(""); // 集成第三方推送(腾讯信鸽、百度云推)时设置此参数以在离开会话界面时接收推送消息
         Logger.d(TAG, "init visitor_id:" + config.getV5VisitorId());
 	}
@@ -109,6 +121,18 @@ public class WelcomeActivity extends Activity implements OnChatActivityListener 
 							flag_userBrowseSomething = false;
 						}
 						return message; // 注：必须将消息对象以返回值返回
+					}
+				});
+			    
+			    // 点击链接监听
+			    V5ClientAgent.getInstance().setURLClickListener(new OnURLClickListener() {
+
+					@Override
+					public boolean onURLClick(Context context,
+							ClientLinkType type, String url) {
+						// TODO Auto-generated method stub
+						Logger.i(TAG, "ClientLinkType:" + type + " onURLClick:" + url);
+						return false;
 					}
 				});
 			}
@@ -171,14 +195,34 @@ public class WelcomeActivity extends Activity implements OnChatActivityListener 
 		// TODO Auto-generated method stub
 		Logger.d(TAG, "<onChatActivityConnect>");
 		
-		// 找指定客服
-		//V5ClientAgent.getInstance().transferHumanService(1, 114052);
+		if (onceFlag) {
+			onceFlag = false;
+			
+			// 找指定客服
+			//V5ClientAgent.getInstance().transferHumanService(1, 114052);
+			
+			// 发送图文测试
+			V5ArticlesMessage articleMsg = new V5ArticlesMessage();
+			V5ArticleBean article = new V5ArticleBean(
+					"V5KF", 
+					"http://rs.v5kf.com/upload/10000/14568171024.png", 
+					"http://www.v5kf.com/public/weixin/page.html?site_id=10000&id=218833&uid=3657455033351629359", 
+					"V5KF是围绕核心技术“V5智能机器人”研发的高品质在线客服系统。可以运用到各种领域，目前的主要产品有：微信智能云平台、网页智能客服系统...");
+			ArrayList<V5ArticleBean> articlesList = new ArrayList<V5ArticleBean>();
+			articlesList.add(article);
+			articleMsg.setArticles(articlesList);
+			V5ClientAgent.getInstance().sendMessage(articleMsg, null);
+		}
 	}
 
 	@Override
 	public void onChatActivityReceiveMessage(ClientChatActivity activity, V5Message message) {
 		// TODO Auto-generated method stub
 		Logger.d(TAG, "<onChatActivityReceiveMessage> " + message.getDefaultContent(this));
+		
+		Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+		Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), notification);
+		r.play();
 	}
 
 	@Override

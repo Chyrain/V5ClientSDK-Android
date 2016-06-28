@@ -138,6 +138,10 @@ public class ImageLoader {
 			Bitmap bitmap = null;
 			Logger.d("ImageLoader", "ImageLoader-->download:" + url);
 			HttpUtil.CopyStream(url, f);
+			
+			// 图片角度矫正
+			UIUtil.correctBitmapAngle(f.getAbsolutePath());
+			
 			bitmap = onDecodeFile(f);
 			return bitmap;
 		} catch (Exception ex) {

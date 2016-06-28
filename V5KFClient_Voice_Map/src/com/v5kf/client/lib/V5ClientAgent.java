@@ -42,7 +42,7 @@ public class V5ClientAgent {
 	public static final String TAG = "ClientAgent";
 	public static final long OPEN_QUES_MAX_ID = 9999999999L;
 	
-	public final static String VERSION = "1.1.1"; // 1.1.1_r0520
+	public final static String VERSION = "1.1.3"; // 1.1.3_r0601
 	private static boolean isSDKInit = false;
 	private int isForeground = 0;
 	
@@ -122,6 +122,12 @@ public class V5ClientAgent {
         	}
         }
 	};
+	
+	public enum ClientLinkType {
+		clientLinkTypeURL,		// 文本链接
+		clientLinkTypeArticle	// 图文链接
+//		clientLinkTypeNumber 	// 数字链接
+	}
 	
 	private static class SingletonHolder {
 		private static final V5ClientAgent singletonHolder = new V5ClientAgent();
@@ -260,6 +266,8 @@ public class V5ClientAgent {
 		}
 		
 		JSONObject json = new JSONObject();
+		json.put("package", context.getApplicationInfo().packageName);
+		json.put("app_name", context.getString(context.getApplicationInfo().labelRes));
 		json.put("site_id", siteId);
 		json.put("account", siteAccount); // 获得用户唯一ID
 		json.put("platform", "android");
@@ -827,7 +835,6 @@ public class V5ClientAgent {
 		mSessionStart = V5Util.getCurrentLongTime();
 		V5ClientConfig.NOTIFICATION_SHOW = false;
 		if (mContext == null) {
-			Logger.e(TAG, "Client not start, please start by V5ClientAgent.getInstance().start");
 			//errorHandle(new V5KFException(V5ExceptionStatus.ExceptionUnknownError, "Client not start, please start by V5ClientAgent.getInstance().start"));
 			return;
 		}
@@ -852,7 +859,13 @@ public class V5ClientAgent {
 		if (mConfigSP != null && mConfigSP.readAppPush() == 0) {
 			return;
 		}
-		sendOffLineMessage();
+		if (mContext == null) {
+			//errorHandle(new V5KFException(V5ExceptionStatus.ExceptionUnknownError, "Client not start, please start by V5ClientAgent.getInstance().start"));
+			return;
+		}
+		if (V5ClientService.isConnected()) {
+			sendOffLineMessage();
+		}
 //		onDestroy();
 	}
 	
@@ -980,6 +993,11 @@ public class V5ClientAgent {
 	}
 	
 	private void sendMessage(String json) {
+		if (mContext == null) {
+			Logger.e(TAG, "[sendMessage] mContext null");
+			return;
+		}
+		
 		Logger.d(TAG, "sendMessage:" + json);
 		Intent sendIntent = new Intent();
 		sendIntent.putExtra("v5_message", json);
@@ -1146,11 +1164,11 @@ public class V5ClientAgent {
 		return mHandler;
 	}
 	
-	protected V5MessageListener getMessageListener() {
+	public V5MessageListener getMessageListener() {
 		return mMessageListener;
 	}
 
-	protected void setMessageListener(V5MessageListener mListener) {
+	public void setMessageListener(V5MessageListener mListener) {
 		mMessageListener = mListener;
 	}
 	

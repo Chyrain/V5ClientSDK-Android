@@ -577,7 +577,7 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 					V5ClientAgent.getInstance().errorHandle(new V5KFException(
 							V5ExceptionStatus.ExceptionSocketTimeout, "[" + mClient.getStatusCode() + "]" + error.getMessage()));
 				} else {
-					connectWebsocket();
+					//connectWebsocket(); //[修改]取消自动重连(死循环),在Activity中处理
 					V5ClientAgent.getInstance().errorHandle(new V5KFException(
 							V5ExceptionStatus.ExceptionConnectionError, "[" + mClient.getStatusCode() + "]" + error.getMessage()));
 				}

@@ -27,10 +27,10 @@ public class EmoticonsUtils {
                      */
                     if (KeyboardConfig.ENABLE_QQ_FACE) {
 	                    ArrayList<EmoticonBean> qfaceArray = ParseData(QFaceiconUtil.faceMap, EmoticonBean.FACE_TYPE_NOMAL, ImageBase.Scheme.DRAWABLE);
-	                    EmoticonSetBean qfaceEmoticonSetBean = new EmoticonSetBean("qface", 3, 7);
+	                    EmoticonSetBean qfaceEmoticonSetBean = new EmoticonSetBean("qface", KeyboardConfig.EMOICON_LINE_PORTRAIT, KeyboardConfig.EMOICON_ROW_PORTRAIT);
 	                    qfaceEmoticonSetBean.setIconUri("drawable://qf000");
-	                    qfaceEmoticonSetBean.setItemPadding(20);
-	                    qfaceEmoticonSetBean.setVerticalSpacing(10);
+	                    qfaceEmoticonSetBean.setItemPadding(KeyboardConfig.EMOICON_ITEM_PADDING_PORTRAIT);
+	                    qfaceEmoticonSetBean.setVerticalSpacing(KeyboardConfig.EMOICON_ITEM_VSPACING_PORTRAIT);
 	                    qfaceEmoticonSetBean.setShowDelBtn(true);
 	                    qfaceEmoticonSetBean.setEmoticonList(qfaceArray);
 	                    dbHelper.insertEmoticonSet(qfaceEmoticonSetBean);
@@ -112,10 +112,10 @@ public class EmoticonsUtils {
                 .build();
     }
 
-    public static EmoticonsKeyboardBuilder getBuilder(Context context) {
+    public static EmoticonsKeyboardBuilder getBuilder(Context context, boolean isLandscape) {
 
         DBHelper dbHelper = new DBHelper(context);
-        ArrayList<EmoticonSetBean> mEmoticonSetBeanList = dbHelper.queryAllEmoticonSet();
+        ArrayList<EmoticonSetBean> mEmoticonSetBeanList = dbHelper.queryAllEmoticonSet(isLandscape);
         dbHelper.cleanup();
 
         return new EmoticonsKeyboardBuilder.Builder()

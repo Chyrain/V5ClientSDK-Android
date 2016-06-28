@@ -3,7 +3,11 @@ package com.v5kf.client.ui.keyboard;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.v5kf.client.lib.Logger;
+import com.v5kf.client.ui.utils.UIUtil;
+
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.support.v4.view.PagerAdapter;
@@ -24,6 +28,12 @@ public class EmoticonsPageView extends ViewPager implements IEmoticonsKeyboard, 
     private List<EmoticonSetBean> mEmoticonSetBeanList;
     private EmoticonsViewPagerAdapter mEmoticonsViewPagerAdapter;
     private ArrayList<View> mEmoticonPageViews = new ArrayList<View>();
+    
+	private int mOrientation = 0;
+	
+	protected void setOrientation(int orientation) {
+		this.mOrientation = orientation;
+	}
 
     public EmoticonsPageView(Context context) {
         this(context, null);
@@ -116,7 +126,7 @@ public class EmoticonsPageView extends ViewPager implements IEmoticonsKeyboard, 
             });
         }
 
-        int screenWidth = Utils.getDisplayWidthPixels(mContext);
+        int screenWidth = UIUtil.getScreenWidth(mContext); //Utils.getDisplayWidthPixels(mContext);
         int maxPagerHeight = mHeight;
 
         mEmoticonPageViews.clear();
@@ -128,6 +138,27 @@ public class EmoticonsPageView extends ViewPager implements IEmoticonsKeyboard, 
                 int emoticonSetSum = emoticonList.size();
                 int row = bean.getRow();
                 int line = bean.getLine();
+                // TODO dp
+                int itemPadding = bean.getItemPadding();
+                int horizontalSpacing = bean.getHorizontalSpacing();
+                int verticalSpacing = bean.getVerticalSpacing();
+//                Logger.w("EmoticonsPageView", "BF orientation:" + mOrientation + " itemPadding:" + itemPadding + 
+//                		" horizontalSpacing:" + horizontalSpacing + " verticalSpacing:" + verticalSpacing);
+                if (horizontalSpacing == 0) {
+                	horizontalSpacing = KeyboardConfig.EMOICON_ITEM_HSPACING_PORTRAIT;
+                }
+                if (mOrientation == Configuration.ORIENTATION_LANDSCAPE) { // 横屏
+                	itemPadding = KeyboardConfig.EMOICON_ITEM_PADDING_LANDSCAPE;
+                	verticalSpacing = KeyboardConfig.EMOICON_ITEM_VSPACING_LANDSCAPE;
+                	horizontalSpacing = KeyboardConfig.EMOICON_ITEM_HSPACING_LANDSCAPE;
+                }
+//                Logger.w("EmoticonsPageView", "AF orientation:" + mOrientation + " itemPadding:" + itemPadding + 
+//                		" horizontalSpacing:" + horizontalSpacing + " verticalSpacing:" + verticalSpacing);
+//                // TODO
+//                if (mOrientation == Configuration.ORIENTATION_LANDSCAPE) { // 横屏
+//                	row = 10;
+//                	line = 2;
+//                }
 
                 int del = bean.isShowDelBtn() ? 1 : 0;
                 int everyPageMaxSum = row * line - del;
@@ -141,14 +172,18 @@ public class EmoticonsPageView extends ViewPager implements IEmoticonsKeyboard, 
                 RelativeLayout.LayoutParams gridParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
                 gridParams.addRule(ResizeLayout.CENTER_VERTICAL);
 
-                int itemHeight = Math.min((screenWidth - (bean.getRow() - 1) * Utils.dip2px(mContext, bean.getHorizontalSpacing())) / bean.getRow(), (maxPagerHeight - (bean.getLine() - 1) * Utils.dip2px(mContext, bean.getVerticalSpacing())) / bean.getLine());
-
+                int itemHeight = (screenWidth - (row + 1) * Utils.dip2px(mContext, horizontalSpacing)) / row; // 利用屏幕宽度来计算，高度maxPagerHeight不稳定，会变化
+//                int itemHeight = Math.min((screenWidth - (row + 1) * Utils.dip2px(mContext, horizontalSpacing)) / row, (maxPagerHeight - (line + 1) * Utils.dip2px(mContext, verticalSpacing)) / line);
+//                Logger.i("EmoticonsPageView", "orientation screenWidth:" + screenWidth + " maxPagerHeight:" + maxPagerHeight + " itemHeight:" + itemHeight);
+//                Logger.i("EmoticonsPageView", "orientation itemWidth:" +(screenWidth - (row + 1) * Utils.dip2px(mContext, horizontalSpacing)) / row);
+//                Logger.i("EmoticonsPageView", "orientation itemHeight:" + (maxPagerHeight - (line + 1) * Utils.dip2px(mContext, verticalSpacing)) / line);
+                
 //                // 计算行距
 //                if (bean.getHeight() > 0) {
-//                    int verticalspacing = Utils.dip2px(mContext, bean.getVerticalSpacing());
+//                    int verticalspacing = Utils.dip2px(mContext, verticalSpacing);
 //                    itemHeight = Math.min(itemHeight,Utils.dip2px(mContext, bean.getHeight()));
 //                    while (verticalspacing > 0) {
-//                        int userdefHeigth = (bean.getLine() - 1) * verticalspacing + Utils.dip2px(mContext, bean.getHeight()) * (bean.getLine());
+//                        int userdefHeigth = (line - 1) * verticalspacing + Utils.dip2px(mContext, bean.getHeight()) * (line);
 //                        if (userdefHeigth <= maxPagerHeight) {
 //                            bean.setVerticalSpacing(Utils.px2dip(mContext, verticalspacing));
 //                            break;
@@ -162,12 +197,12 @@ public class EmoticonsPageView extends ViewPager implements IEmoticonsKeyboard, 
                     RelativeLayout rl = new RelativeLayout(mContext);
                     GridView gridView = new GridView(mContext);
 //					gridView.setMotionEventSplittingEnabled(false);
-                    gridView.setNumColumns(bean.getRow());
+                    gridView.setNumColumns(row);
                     gridView.setBackgroundColor(Color.TRANSPARENT);
                     gridView.setStretchMode(GridView.STRETCH_COLUMN_WIDTH);
                     gridView.setCacheColorHint(0);
-                    gridView.setHorizontalSpacing(Utils.dip2px(mContext, bean.getHorizontalSpacing()));
-                    gridView.setVerticalSpacing(Utils.dip2px(mContext, bean.getVerticalSpacing()));
+                    gridView.setHorizontalSpacing(Utils.dip2px(mContext, horizontalSpacing));
+                    gridView.setVerticalSpacing(Utils.dip2px(mContext, verticalSpacing));
                     gridView.setSelector(new ColorDrawable(Color.TRANSPARENT));
                     gridView.setGravity(Gravity.CENTER);
                     gridView.setVerticalScrollBarEnabled(false);
@@ -179,20 +214,20 @@ public class EmoticonsPageView extends ViewPager implements IEmoticonsKeyboard, 
 
                     // 删除按钮
                     if (bean.isShowDelBtn()) {
-                        int count = bean.getLine() * bean.getRow();
+                        int count = line * row;
                         while (list.size() < count - 1) {
                             list.add(null);
                         }
                         list.add(new EmoticonBean(EmoticonBean.FACE_TYPE_DEL, "drawable://v5_icon_del", null));
                     } else {
-                        int count = bean.getLine() * bean.getRow();
+                        int count = line * row;
                         while (list.size() < count) {
                             list.add(null);
                         }
                     }
 
                     EmoticonsAdapter adapter = new EmoticonsAdapter(mContext, list);
-                    adapter.setHeight(itemHeight, Utils.dip2px(mContext, bean.getItemPadding()));
+                    adapter.setHeight(itemHeight, Utils.dip2px(mContext, itemPadding));
                     gridView.setAdapter(adapter);
                     rl.addView(gridView, gridParams);
                     mEmoticonPageViews.add(rl);
@@ -227,7 +262,15 @@ public class EmoticonsPageView extends ViewPager implements IEmoticonsKeyboard, 
         int pageCount = 0;
         if (emoticonSetBean != null && emoticonSetBean.getEmoticonList() != null) {
             int del = emoticonSetBean.isShowDelBtn() ? 1 : 0;
-            int everyPageMaxSum = emoticonSetBean.getRow() * emoticonSetBean.getLine() - del;
+            int row = emoticonSetBean.getRow();
+            int line = emoticonSetBean.getLine();
+//          // TODO
+//            if (mOrientation == Configuration.ORIENTATION_LANDSCAPE) { // 横屏
+//            	row = 2;
+//            	line = 10;
+//            }
+            
+            int everyPageMaxSum = row * line - del;
             pageCount = (int) Math.ceil((double) emoticonSetBean.getEmoticonList().size() / everyPageMaxSum);
         }
         return pageCount;

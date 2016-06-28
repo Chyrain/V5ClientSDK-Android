@@ -1,5 +1,7 @@
 package com.v5kf.client.ui.callback;
 
+import com.v5kf.client.lib.V5ClientAgent.ClientLinkType;
+
 import android.content.Context;
 
 /**
@@ -8,5 +10,12 @@ import android.content.Context;
  *
  */
 public interface OnURLClickListener {
-	public void onURLClick(Context context, String url);
+	/**
+	 * 返回值代表是否消费了此事件
+	 * @param context
+	 * @param type
+	 * @param url
+	 * @return
+	 */
+	public boolean onURLClick(Context context, ClientLinkType type, String url);
 }

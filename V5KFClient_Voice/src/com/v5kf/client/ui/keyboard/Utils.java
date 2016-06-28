@@ -54,13 +54,13 @@ public class Utils {
     /** 屏幕宽度   */
     private static int DisplayWidthPixels = 0;
     /** 屏幕高度   */
-//    private static int DisplayheightPixels = 0;
+    private static int DisplayheightPixels = 0;
 
     private static void getDisplayMetrics(Context context) {
         DisplayMetrics dm = new DisplayMetrics();
         ((Activity) context).getWindowManager().getDefaultDisplay().getMetrics(dm);
         DisplayWidthPixels = dm.widthPixels;// 宽度
-//        DisplayheightPixels = dm.heightPixels;// 高度
+        DisplayheightPixels = dm.heightPixels;// 高度
     }
 
     public static int getDisplayWidthPixels(Context context) {
@@ -71,6 +71,16 @@ public class Utils {
             getDisplayMetrics(context);
         }
         return DisplayWidthPixels;
+    }
+
+    public static int getDisplayHeightPixels(Context context) {
+    	if (context == null) {
+    		return -1;
+    	}
+    	if (DisplayheightPixels == 0) {
+    		getDisplayMetrics(context);
+    	}
+    	return DisplayheightPixels;
     }
 
     public static int dip2px(Context context, float dipValue) {

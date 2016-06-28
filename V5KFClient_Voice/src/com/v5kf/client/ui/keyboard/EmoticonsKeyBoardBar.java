@@ -1,6 +1,7 @@
 package com.v5kf.client.ui.keyboard;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
@@ -13,7 +14,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
-import android.widget.Toast;
 
 import com.v5kf.client.ui.emojicon.EmojiconEditText;
 import com.v5kf.client.ui.utils.UIUtil;
@@ -560,4 +560,24 @@ public class EmoticonsKeyBoardBar extends AutoHeightLayout implements IEmoticons
 
         public void OnMultimediaBtnClick();
     }
+
+	@Override
+	public void setOrientation(int orientation) {
+		// TODO Auto-generated method stub
+		super.setOrientation(orientation);
+		if (mEmoticonsPageView != null) {
+			mEmoticonsPageView.setOrientation(orientation);
+			mEmoticonsPageView.invalidate();
+			if (mEmoticonsPageView.getAdapter() != null) {
+				mEmoticonsPageView.getAdapter().notifyDataSetChanged();
+			}
+		}
+		if (orientation == Configuration.ORIENTATION_LANDSCAPE) { 
+			// px
+			mAutoViewHeight = UIUtil.px2dp((UIUtil.getScreenHeight(getContext())/2 - 50), getContext());
+		} else if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+			// dp转px
+			mAutoViewHeight = Utils.getDefKeyboardHeight(getContext());
+		}
+	}
 }

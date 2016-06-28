@@ -25,6 +25,7 @@ import android.widget.TextView;
 
 import com.v5kf.client.lib.Logger;
 import com.v5kf.client.lib.V5ClientAgent;
+import com.v5kf.client.lib.V5ClientAgent.ClientLinkType;
 import com.v5kf.client.lib.V5ConfigSP;
 import com.v5kf.client.lib.entity.V5ArticleBean;
 import com.v5kf.client.lib.entity.V5ArticlesMessage;
@@ -463,9 +464,11 @@ public class ClientChatListAdapter extends BaseAdapter {
 					
 						@Override
 						public void onClick(View v, String url) {
+							boolean used = false;
 							if (null != V5ClientAgent.getInstance().getURLClickListener()) {
-								V5ClientAgent.getInstance().getURLClickListener().onURLClick(v.getContext(), url);
-							} else {
+								used = V5ClientAgent.getInstance().getURLClickListener().onURLClick(v.getContext(), ClientLinkType.clientLinkTypeURL, url);
+							}
+							if (!used) {
 								Intent intent = new Intent(mContext, WebViewActivity.class);
 								intent.putExtra("url", url);
 								mContext.startActivity(intent);

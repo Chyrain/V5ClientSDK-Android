@@ -15,6 +15,7 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -44,6 +45,7 @@ import android.widget.Toast;
 import com.v5kf.client.lib.DBHelper;
 import com.v5kf.client.lib.Logger;
 import com.v5kf.client.lib.V5ClientAgent;
+import com.v5kf.client.lib.V5ClientAgent.ClientLinkType;
 import com.v5kf.client.lib.V5ClientAgent.ClientOpenMode;
 import com.v5kf.client.lib.V5ClientAgent.ClientServingStatus;
 import com.v5kf.client.lib.V5ClientConfig;
@@ -92,7 +94,7 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
     private static final int UI_LIST_UPDATE_HISTORICAL = 3;
     private static final int HDL_CHECK_CONNECT = 4;
     private static final int HDL_VOICE_DISMISS = 101; 
-    private static final int RECON_DELAY = 200; // ms 
+    private static final int RECON_DELAY = 200; // ms
     
     private static final int REQUEST_CODE_PHOTO = 10;
     private static final int REQUEST_CODE_PHOTO_KITKAT = 11;
@@ -158,8 +160,9 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
 	private String mOpenQuestion;
 	private boolean enableVoice = true;
 	private boolean showAvatar = true;
-	private int reconnectFlag = 0;
 	
+	private int reconnectFlag = 0; // 自动重连的标识
+
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -182,6 +185,7 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
         }
         
         findView();
+        mKeyBar.setOrientation(getResources().getConfiguration().orientation);
         initView();
         
 		// 开启V5消息服务
@@ -208,6 +212,49 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
 //			V5ClientAgent.getInstance().onNewIntent();
 //		}
 	}
+	
+	@Override
+	public void onConfigurationChanged(final Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+		if (mKeyBar != null) {
+			mKeyBar.hideAutoView();
+		}
+		Utils.closeSoftKeyboard(this);
+		Logger.d(TAG, "[onConfigurationChanged] orientation:" + newConfig.orientation);
+		// TODO
+		mHandler.postDelayed(new Runnable() { // 异步加载
+			
+			@Override
+			public void run() {
+				reloadAllViews(newConfig.orientation);
+				mKeyBar.hideAutoView();
+			}
+		}, 50);
+	}
+
+	private void reloadAllViews(int orientation) {
+		// TODO
+		Logger.w(TAG, "[reloadAllViews] orientation:" + orientation);
+		setContentView(UIUtil.getIdByName(this, "layout", "v5_activity_client_chat"));
+	    // 重新布局，注意，这里删除了init()，否则又初始化了，状态就丢失
+	    findView();
+	    
+		if (mKeyBar != null) {
+			mKeyBar.setOrientation(orientation);
+//			if (orientation == Configuration.ORIENTATION_LANDSCAPE) { 
+//				// px
+//				mKeyBar.setAutoViewHeight(UIUtil.getScreenHeight(getApplicationContext())/2 - 50);
+//			} else if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+//				// dp转px
+//				mKeyBar.setAutoViewHeight(UIUtil.dp2px(Utils.getDefKeyboardHeight(getApplicationContext()), getApplicationContext()));
+//			}
+		}
+		
+	    initView();
+	    if (!TextUtils.isEmpty(mCacheTitle)) {
+    		mTitleTv.setText(mCacheTitle);
+    	}
+	}
 
 	private void findView() {
 		mTitleTv = (TextView) findViewById(UIUtil.getIdByName(this, "id", "header_htv_subtitle"));
@@ -226,9 +273,6 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
 		tv_voice_second = (TextView) findViewById(UIUtil.getIdByName(this, "id", "tv_voice_second"));
 		iv_record = (ImageView) findViewById(UIUtil.getIdByName(this, "id", "iv_record"));
 		
-		mKeyBar.setVoiceVisibility(this.enableVoice); // [修改]false->true显示语音文字切换按钮
-		mKeyBar.setBuilder(EmoticonsUtils.getBuilder(this));
-		
 		/* 添加表情删除按钮 */
 		View toolBtnView = mInflater.inflate(UIUtil.getIdByName(this, "layout", "v5_view_toolbtn_right_simple"), null);
         toolBtnView.setOnClickListener(new View.OnClickListener() {
@@ -241,6 +285,9 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
 	}
 
 	private void initView() {
+		mKeyBar.setVoiceVisibility(this.enableVoice); // [修改]false->true显示语音文字切换按钮
+		mKeyBar.setBuilder(EmoticonsUtils.getBuilder(this, mKeyBar.getOrientation() == Configuration.ORIENTATION_LANDSCAPE)); // [修改]传入横竖屏参数
+		
 		mTitleTv.setText(UIUtil.getIdByName(this, "string", "v5_title_on_connection"));
 		
 		/* 返回按钮 */
@@ -296,14 +343,15 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
 		
 		/* 常见问题、位置、人工客服等功能界面 */
 		AppFuncPageView pageApps = (AppFuncPageView)viewApps.findViewById(UIUtil.getIdByName(this, "id", "view_apv"));
+		pageApps.setOrientation(mKeyBar.getOrientation()); // [修改]横屏支持
 		EmoticonsIndicatorView indicatorView = (EmoticonsIndicatorView)viewApps.findViewById(UIUtil.getIdByName(this, "id", "view_eiv"));
 		pageApps.setIndicatorView(indicatorView);
+		
 		ArrayList<AppBean> mAppBeanList = new ArrayList<AppBean>();
 		String[] funcArray = getResources().getStringArray(UIUtil.getIdByName(this, "array", "v5_chat_func"));
 		String[] funcIconArray = getResources().getStringArray(UIUtil.getIdByName(this, "array", "v5_chat_func_icon"));
 		for (int i = 0; i < funcArray.length; i++) {
 			if (funcIconArray[i].equals("v5_icon_location")) {
-				// 取消位置发送
 				continue;
 			}
 			AppBean bean = new AppBean();
@@ -792,6 +840,10 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
     		mWarningdialog.dismiss();
     	}
     	if (!isConnected) { // 仅首次连接成功执行下列操作
+    		if (null != V5ClientAgent.getInstance().getChatActivityListener()) {
+        		V5ClientAgent.getInstance().getChatActivityListener().onChatActivityConnect(this);
+        	}
+    		
         	mOffset = 0;
     		loadMessages(); // 获取会话消息
         	isConnected = true;
@@ -800,10 +852,6 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
     		int openNum = mOffset;
     		mOffset = 0;
     		getHistoricalMessages(openNum);
-    	}
-    	
-    	if (null != V5ClientAgent.getInstance().getChatActivityListener()) {
-    		V5ClientAgent.getInstance().getChatActivityListener().onChatActivityConnect(this);
     	}
     }
 
@@ -1144,9 +1192,15 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
 				V5ArticlesMessage articles = (V5ArticlesMessage) message;
 				if (articles != null && articles.getArticles().size() > newsPos) {
 					String url = articles.getArticles().get(newsPos).getUrl();
-					Intent intent = new Intent(this, WebViewActivity.class);
-					intent.putExtra("url", url);
-					startActivity(intent);
+					boolean used = false;
+					if (V5ClientAgent.getInstance().getURLClickListener() != null) {
+						used = V5ClientAgent.getInstance().getURLClickListener().onURLClick(getApplicationContext(), ClientLinkType.clientLinkTypeArticle, url);
+					}
+					if (!used) {
+						Intent intent = new Intent(this, WebViewActivity.class);
+						intent.putExtra("url", url);
+						startActivity(intent);
+					}
 				}
 			}
 		}
@@ -1172,9 +1226,15 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
     	mKeyBar.hideAutoView();
     	UIUtil.closeSoftKeyboard(ClientChatActivity.this);
     	
-		Intent intent = new Intent(this, WebViewActivity.class);
-		intent.putExtra("url", url);
-		startActivity(intent);		
+		boolean used = false;
+		if (V5ClientAgent.getInstance().getURLClickListener() != null) {
+			used = V5ClientAgent.getInstance().getURLClickListener().onURLClick(getApplicationContext(), ClientLinkType.clientLinkTypeArticle, url);
+		}
+		if (!used) {
+			Intent intent = new Intent(this, WebViewActivity.class);
+			intent.putExtra("url", url);
+			startActivity(intent);
+		}
 	}
 
 	@Override
@@ -1438,7 +1498,6 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
 		}
 	}
 	
-	// TODO 语音
 	/**
 	 * 长按说话
 	 * @ClassName: VoiceTouchListen
