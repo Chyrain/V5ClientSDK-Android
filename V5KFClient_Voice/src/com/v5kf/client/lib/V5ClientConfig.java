@@ -70,6 +70,7 @@ public class V5ClientConfig {
 	private String uid; // 多用户账号APP必须
 	private String nickname;
 	private String avatar; 
+	private int vip; // 0-5
 	private int gender;
 	
 	/* 坐席信息 */
@@ -643,6 +644,14 @@ public class V5ClientConfig {
 
 	public void setWorkerId(long workerId) {
 		this.workerId = workerId;
+	}
+
+	public int getVip() {
+		return vip;
+	}
+
+	public void setVip(int vip) {
+		this.vip = vip;
 	}
 
 //	public void setWorkerPhoto(String photo, String nickname) {

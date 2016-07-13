@@ -42,7 +42,8 @@ public class V5ClientAgent {
 	public static final String TAG = "ClientAgent";
 	public static final long OPEN_QUES_MAX_ID = 9999999999L;
 	
-	public final static String VERSION = "1.1.3"; // 1.1.3_r0601
+	public final static String VERSION = "1.1.4"; // 1.1.4_r0713
+	public final static String VERSION_DESC = "v1.1.4_r0713"; // v1.1.4_r0713
 	private static boolean isSDKInit = false;
 	private int isForeground = 0;
 	
@@ -352,8 +353,8 @@ public class V5ClientAgent {
 		if (mConfigSP == null) {
 			mConfigSP = new V5ConfigSP(context);
 		}
-		//cacheLocalMsg = mConfigSP.readLocalDbFlag();
-		cacheLocalMsg = true; // [修改]始终缓存消息
+		cacheLocalMsg = mConfigSP.readLocalDbFlag();
+//		cacheLocalMsg = true; // [修改]始终缓存消息
 //		if (mSessionStart == 0) {
 //			mSessionStart = mConfigSP.readSessionStart();
 //		}
@@ -449,6 +450,9 @@ public class V5ClientAgent {
 		}
 		if (null != config.getAvatar()) {
 			json.put("avatar", config.getAvatar());
+		}
+		if (0 != config.getVip()) {
+			json.put("vip", config.getVip());
 		}
 		if (mDBHelper != null) { // 更新表名：v5_message_[visitor_id]
 			mDBHelper.setTableName("v5_message_" + config.getV5VisitorId());
@@ -828,6 +832,8 @@ public class V5ClientAgent {
 		}
 		Intent i = new Intent(mContext, V5ClientService.class);
 		mContext.startService(i);
+		
+		mSessionStart = 1;
 	}
 	
 	public void onAppGoForeGround() {
@@ -916,6 +922,8 @@ public class V5ClientAgent {
 //		}
 		
 		mSessionStart = 0;
+		mMessageListener = null;
+		mContext = null;
 		
 		if (mContext != null) {
 			Logger.w(TAG, "[onDestroy] -> stopService");

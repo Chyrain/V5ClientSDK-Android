@@ -1,13 +1,10 @@
 package com.v5kf.client;
 
-import java.util.ArrayList;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
 import android.content.Context;
-import android.media.AudioManager;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -26,8 +23,6 @@ import com.v5kf.client.lib.V5ClientAgent.ClientLinkType;
 import com.v5kf.client.lib.V5ClientAgent.ClientOpenMode;
 import com.v5kf.client.lib.V5ClientAgent.ClientServingStatus;
 import com.v5kf.client.lib.V5ClientConfig;
-import com.v5kf.client.lib.entity.V5ArticleBean;
-import com.v5kf.client.lib.entity.V5ArticlesMessage;
 import com.v5kf.client.lib.entity.V5Message;
 import com.v5kf.client.ui.ClientChatActivity;
 import com.v5kf.client.ui.callback.OnChatActivityListener;
@@ -86,8 +81,8 @@ public class WelcomeActivity extends Activity implements OnChatActivityListener 
 			    bundle.putBoolean("enableVoice", true);			// 是否允许发送语音
 			    bundle.putBoolean("showAvatar", true);			// 是否显示对话双方的头像
 			    // 开场白模式，默认为固定开场白，可根据客服启动场景设置开场问题
-			    bundle.putInt("clientOpenMode", ClientOpenMode.clientOpenModeDefault.ordinal());
-			    bundle.putString("clientOpenParam", "您好，请问有什么需要帮助的吗？");
+//			    bundle.putInt("clientOpenMode", ClientOpenMode.clientOpenModeDefault.ordinal());
+//			    bundle.putString("clientOpenParam", "您好，请问有什么需要帮助的吗？");
 			    
 			    //Context context = getApplicationContext();
 			    //Intent chatIntent = new Intent(context, ClientChatActivity.class);
@@ -202,16 +197,17 @@ public class WelcomeActivity extends Activity implements OnChatActivityListener 
 			//V5ClientAgent.getInstance().transferHumanService(1, 114052);
 			
 			// 发送图文测试
-			V5ArticlesMessage articleMsg = new V5ArticlesMessage();
-			V5ArticleBean article = new V5ArticleBean(
-					"V5KF", 
-					"http://rs.v5kf.com/upload/10000/14568171024.png", 
-					"http://www.v5kf.com/public/weixin/page.html?site_id=10000&id=218833&uid=3657455033351629359", 
-					"V5KF是围绕核心技术“V5智能机器人”研发的高品质在线客服系统。可以运用到各种领域，目前的主要产品有：微信智能云平台、网页智能客服系统...");
-			ArrayList<V5ArticleBean> articlesList = new ArrayList<V5ArticleBean>();
-			articlesList.add(article);
-			articleMsg.setArticles(articlesList);
-			V5ClientAgent.getInstance().sendMessage(articleMsg, null);
+//			V5ArticlesMessage articleMsg = new V5ArticlesMessage();
+//			V5ArticleBean article = new V5ArticleBean(
+//					"V5KF", 
+//					"http://rs.v5kf.com/upload/10000/14568171024.png", 
+//					"http://www.v5kf.com/public/weixin/page.html?site_id=10000&id=218833&uid=3657455033351629359", 
+//					"V5KF是围绕核心技术“V5智能机器人”研发的高品质在线客服系统。可以运用到各种领域，目前的主要产品有：微信智能云平台、网页智能客服系统...");
+//			ArrayList<V5ArticleBean> articlesList = new ArrayList<V5ArticleBean>();
+//			articlesList.add(article);
+//			articleMsg.setArticles(articlesList);
+//			V5ClientAgent.getInstance().sendMessage(articleMsg, null);
+			
 		}
 	}
 
@@ -220,9 +216,9 @@ public class WelcomeActivity extends Activity implements OnChatActivityListener 
 		// TODO Auto-generated method stub
 		Logger.d(TAG, "<onChatActivityReceiveMessage> " + message.getDefaultContent(this));
 		
-		Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-		Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), notification);
-		r.play();
+//		Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+//		Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), notification);
+//		r.play();
 	}
 
 	@Override

@@ -190,7 +190,7 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
         initView();
         
 		// 开启V5消息服务
-		V5ClientAgent.getInstance().start(this, this);
+		V5ClientAgent.getInstance().start(this.getApplicationContext(), this);
 		// 表情模块初始化
 		EmoticonsUtils.initEmoticonsDB(this);
 		
@@ -1407,6 +1407,7 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
 			@Override
 			public void complete(List<V5Message> msgs, int offset, int size, boolean finish) {
 				isHistoricalFinish = finish;
+				Logger.d(TAG, "[getHistoricalMessages] complete size=" + size);
 				if (msgs != null) {
 					for (V5Message msg : msgs) {
 						mDatas.add(0, new V5ChatBean(msg));

@@ -72,8 +72,8 @@
             android:name="com.v5kf.client.ui.ShowImageActivity" >
         </activity>
         
-        <meta-data android:value="124983" android:name="V5_SITE" />
-        <meta-data android:value="xwsj" android:name="V5_ACCOUNT" />
+        <meta-data android:value="105723" android:name="V5_SITE" />
+        <meta-data android:value="v5kf2015" android:name="V5_ACCOUNT" />
         
     </application>
 

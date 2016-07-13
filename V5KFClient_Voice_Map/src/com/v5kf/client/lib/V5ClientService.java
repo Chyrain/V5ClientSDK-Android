@@ -25,6 +25,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 
 import com.v5kf.client.lib.NetworkManager.NetworkListener;
 import com.v5kf.client.lib.V5ClientAgent.ClientServingStatus;
@@ -212,7 +213,8 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 						V5ClientAgent.getInstance().doAccountAuth();
 						mReAuthCount++;
 					} catch (JSONException e) {
-						e.printStackTrace();
+						//e.printStackTrace();
+						Log.e(TAG, "", e);
 					}
 				} else {
 					V5ClientConfig.getInstance(this).shouldUpdateUserInfo();
@@ -496,7 +498,10 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 				}
 			}
 		} catch (JSONException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
+			Log.e(TAG, "", e);
+			V5ClientAgent.getInstance().errorHandle(new V5KFException(V5ExceptionStatus.ExceptionUnknownError, "Unknown error, try reconnect"));
+			connectWebsocket(true);
 		}
 	}
 
@@ -565,7 +570,8 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 							V5ClientAgent.getInstance().doAccountAuth();
 							mReAuthCount++;
 						} catch (JSONException e) {
-							e.printStackTrace();
+							//e.printStackTrace();
+							Log.e(TAG, "", e);
 						}
 					} else {
 						V5ClientConfig.getInstance(this).shouldUpdateUserInfo();

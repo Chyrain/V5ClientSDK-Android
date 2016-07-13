@@ -152,6 +152,7 @@ public class DBHelper extends SQLiteOpenHelper {
 		values.put("json_content", json_content);
 		
 		long id = insert(values);
+		Logger.w("v5client", "DbHelper insert id:" + id);
 		message.setId(id);
 		return true;
 	}

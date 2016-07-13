@@ -189,7 +189,7 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
         initView();
         
 		// 开启V5消息服务
-		V5ClientAgent.getInstance().start(this, this);
+		V5ClientAgent.getInstance().start(this.getApplicationContext(), this);
 		// 表情模块初始化
 		EmoticonsUtils.initEmoticonsDB(this);
 		

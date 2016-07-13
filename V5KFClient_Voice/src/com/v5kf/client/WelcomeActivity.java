@@ -60,7 +60,7 @@ public class WelcomeActivity extends Activity implements OnChatActivityListener 
 		config.setAvatar("https://tcdn21.wn517.com/dev/avatar/nl2fci00fzwpx6m4o2xi.jpg@0o_0l_64w_90q_1pr.jpg"); 
 //        config.setUid("android_sdk_chyrain"); // 设置用户ID
         //config.setDeviceToken(""); // 集成第三方推送(腾讯信鸽、百度云推)时设置此参数以在离开会话界面时接收推送消息
-        config.setDeviceToken("new_device_token_for_test_1509");
+//        config.setDeviceToken("new_device_token_for_test_1509");
         Logger.i(TAG, "[onCreate] visitor_id:" + config.getV5VisitorId());
         Logger.i(TAG, "[onCreate] uid:" + config.getUid());
 	}
@@ -84,7 +84,7 @@ public class WelcomeActivity extends Activity implements OnChatActivityListener 
 			    bundle.putBoolean("showAvatar", true);			// 是否显示对话双方的头像
 			    // 开场白模式，默认为固定开场白，可根据客服启动场景设置开场问题
 			    bundle.putInt("clientOpenMode", ClientOpenMode.clientOpenModeDefault.ordinal());
-			    bundle.putString("clientOpenParam", "您好，请问有什么需要帮助的吗？");
+//			    bundle.putString("clientOpenParam", "您好，请问有什么需要帮助的吗？");
 			    
 			    //Context context = getApplicationContext();
 			    //Intent chatIntent = new Intent(context, ClientChatActivity.class);

@@ -54,9 +54,14 @@ public abstract class V5Message implements Serializable {
 		}
 		if (jsonMsg.has(V5MessageDefine.CREATE_TIME)) {
 			try {
-				create_time = jsonMsg.getLong(V5MessageDefine.CREATE_TIME);
-			} catch (JSONException e) {
-				create_time = V5Util.stringDateToLong(jsonMsg.getString(V5MessageDefine.CREATE_TIME)) / 1000;
+				try {
+					create_time = jsonMsg.getLong(V5MessageDefine.CREATE_TIME);
+				} catch (JSONException e) {
+					create_time = V5Util.stringDateToLong(jsonMsg.getString(V5MessageDefine.CREATE_TIME)) / 1000;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				create_time = V5Util.getCurrentLongTime() / 1000;
 			}
 		} else {
 			create_time = V5Util.getCurrentLongTime() / 1000;
