@@ -441,8 +441,11 @@ public class ClientChatListAdapter extends BaseAdapter {
 			break;
 		
 		default: {
-			String str = message.getDefaultContent(mContext) == null ? "" : message.getDefaultContent(mContext);
-			Spanned text = Html.fromHtml(str.replace("\n", "<br>"));
+			String content = message.getDefaultContent(mContext) == null ? "" : message.getDefaultContent(mContext);
+			content = content.replaceAll("/::<", "/::&lt;");
+			content = content.replaceAll("/:<", "/:&lt;");
+	    	content = content.replaceAll("\n", "<br>");
+			Spanned text = Html.fromHtml(content);
 			holder.mMsg.setText(text);
 			holder.mMsg.setMovementMethod(LinkMovementMethod.getInstance());
 			
@@ -506,6 +509,7 @@ public class ClientChatListAdapter extends BaseAdapter {
         	} else if (message.getDirection() == V5MessageDefine.MSG_DIR_FROM_ROBOT ||
 					message.getDirection() == V5MessageDefine.MSG_DIR_COMMENT) {
 				photoDefaultId = UIUtil.getIdByName(mContext, "drawable", "v5_avatar_robot");
+				photoUrl = V5ClientAgent.getInstance().getConfig().getRobotPhoto();
 			} else if (message.getDirection() == V5MessageDefine.MSG_DIR_TO_CUSTOMER) {
 				photoDefaultId = UIUtil.getIdByName(mContext, "drawable", "v5_avatar_worker");
 				V5ConfigSP configSP = new V5ConfigSP(mContext);

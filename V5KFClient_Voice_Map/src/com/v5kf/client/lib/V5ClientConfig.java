@@ -13,6 +13,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
+import android.text.TextUtils;
 
 import com.v5kf.client.lib.entity.V5Message;
 
@@ -34,7 +35,6 @@ public class V5ClientConfig {
 	public static int SOCKET_TIMEOUT = 10000; // 超时时间10s
 	
 	protected static boolean AUTO_WORKER_SERVICE = false;
-	protected static boolean NOTIFICATION_SHOW = true;
 //	protected static final int NOTIFICATION_ID = 23;
 	protected static final String ACTION_NOTIFICATION = "com.v5kf.android.intent.notification";
 	protected static final String ACTION_NEW_MESSAGE = "com.v5kf.android.intent.action_message";
@@ -79,6 +79,11 @@ public class V5ClientConfig {
 	private String workerPhoto;
 	private int workerType; // 人工or机器人or机器人托管
 	
+	/* 机器人信息 */
+	private String robotName;
+	private String robotPhoto;
+	private String robotIntro;
+	
 	/* SDK基础配置信息(AndroidManifest.xml)，需要缓存本地 */
 	private String siteId;
 	private String siteAccount;
@@ -93,6 +98,9 @@ public class V5ClientConfig {
 	private String deviceToken; /* 一个App对应一个deviceToken */
 	/* 通知 */
 	private String notificationTitle;
+	/* 是否发送心跳包  */
+	private boolean heartBeatEnable = true;
+	private int heartBeatTime = 30000; // 单位ms
 	
 	private Context mContext;
 	private static V5ClientConfig mClientConfig = null;
@@ -603,7 +611,7 @@ public class V5ClientConfig {
 	}
 	
 	protected static String getPictureThumbnailFormatURL() { //APP_PIC_V5_THUMBNAIL_FMT
-		return (USE_HTTPS ? "https" : "http") + "://chat.v5kf.com/" + (DEBUG ? "debug" : "public") + "/resource/%s/%s?w=350&h=350&q=60"; // 图片质量0-100
+		return (USE_HTTPS ? "https" : "http") + "://chat.v5kf.com/" + (DEBUG ? "debug" : "public") + "/resource/%s/%s/thumbnail"; // 图片质量0-100
 	}
 	
 	protected static String getResourceFormatURL() { //APP_RESOURCE_V5_FMT
@@ -652,6 +660,82 @@ public class V5ClientConfig {
 
 	public void setVip(int vip) {
 		this.vip = vip;
+	}
+
+	public String getRobotName() {
+		if (!TextUtils.isEmpty(this.robotName)) {
+			return this.robotName;
+		} else {
+			V5ConfigSP config = new V5ConfigSP(mContext);
+			this.robotName = config.readString("v5_robot_name");
+		}
+		return robotName;
+	}
+
+	public void setRobotName(String name) {
+		if (null == name || name.isEmpty()) {
+			return;
+		} else {
+			this.robotName = name;
+			V5ConfigSP configSP = new V5ConfigSP(mContext);
+			configSP.saveString("v5_robot_name", name);
+		}
+	}
+
+	public String getRobotPhoto() {
+		if (!TextUtils.isEmpty(this.robotPhoto)) {
+			return this.robotPhoto;
+		} else {
+			V5ConfigSP config = new V5ConfigSP(mContext);
+			this.robotPhoto = config.readString("v5_robot_photo");
+		}
+		return robotPhoto;
+	}
+
+	public void setRobotPhoto(String photo) {
+		if (null == photo || photo.isEmpty()) {
+			return;
+		} else {
+			this.robotPhoto = photo;
+			V5ConfigSP configSP = new V5ConfigSP(mContext);
+			configSP.saveString("v5_robot_photo", photo);
+		}
+	}
+
+	public String getRobotIntro() {
+		if (!TextUtils.isEmpty(this.robotIntro)) {
+			return this.robotIntro;
+		} else {
+			V5ConfigSP config = new V5ConfigSP(mContext);
+			this.robotIntro = config.readString("v5_robot_intro");
+		}
+		return robotIntro;
+	}
+
+	public void setRobotIntro(String intro) {
+		if (null == intro || intro.isEmpty()) {
+			return;
+		} else {
+			this.robotIntro = intro;
+			V5ConfigSP configSP = new V5ConfigSP(mContext);
+			configSP.saveString("v5_robot_intro", intro);
+		}
+	}
+
+	public boolean isHeartBeatEnable() {
+		return heartBeatEnable;
+	}
+
+	public void setHeartBeatEnable(boolean heartBeatEnable) {
+		this.heartBeatEnable = heartBeatEnable;
+	}
+
+	public int getHeartBeatTime() {
+		return heartBeatTime;
+	}
+
+	public void setHeartBeatTime(int heartBeatTime) {
+		this.heartBeatTime = heartBeatTime;
 	}
 
 //	public void setWorkerPhoto(String photo, String nickname) {

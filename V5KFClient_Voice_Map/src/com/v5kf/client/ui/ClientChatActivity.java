@@ -26,7 +26,6 @@ import android.provider.MediaStore;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v4.widget.SwipeRefreshLayout.OnRefreshListener;
 import android.text.TextUtils;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -81,8 +80,7 @@ import com.v5kf.client.ui.utils.LocationBean;
 import com.v5kf.client.ui.utils.UIUtil;
 import com.v5kf.client.ui.utils.V5VoiceRecord;
 import com.v5kf.client.ui.utils.VoiceErrorCode;
-import com.v5kf.client.ui.widget.WarningDialog;
-import com.v5kf.client.ui.widget.WarningDialog.WarningDialogListener;
+import com.v5kf.client.ui.widget.AlertDialog;
 
 public class ClientChatActivity extends Activity implements V5MessageListener, 
 		OnChatListClickListener, OnQuesClickListener, OnRefreshListener, V5VoiceRecord.VoiceRecordListener {
@@ -141,7 +139,7 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
 	private boolean isConnected = false;
 	
 	private Dialog mLoadingDialog;
-	private WarningDialog mWarningdialog;
+	private AlertDialog mAlertDialog;
 	
 	// 语音有关view
  	private Button mBtnVoice;
@@ -578,21 +576,41 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
 		mTitleTv.setText(title);
 	}
 	
-	protected void showWarningDialog(int contentResId, WarningDialogListener listener) {
-		if(null == mWarningdialog) {
-			mWarningdialog = new WarningDialog(this);
-		}
-		mWarningdialog.setDialogMode(WarningDialog.MODE_ONE_BUTTON);
-		mWarningdialog.setContent(contentResId);
-		mWarningdialog.setContentViewGravity(Gravity.CENTER);
-		mWarningdialog.setOnClickListener(listener);
+	protected void showWarningDialog(int contentResId, View.OnClickListener listener) {
+		mAlertDialog = 
+				new AlertDialog(this).builder()
+					.setTitle(UIUtil.getIdByName(getApplicationContext(), "string", "v5_tips"))
+					.setMsg(contentResId)
+					.setCancelable(false)
+					.setNegativeButton(UIUtil.getIdByName(getApplicationContext(), "string", "v5_btn_confirm"), listener);
 		
-		mWarningdialog.show();
+		mAlertDialog.show();
+	}
+
+	protected void showWarningDialog(int contentResId, int rightBtnRes, View.OnClickListener rightBtnListener) {
+		mAlertDialog = 
+				new AlertDialog(this).builder()
+				.setTitle(UIUtil.getIdByName(getApplicationContext(), "string", "v5_tips"))
+				.setMsg(contentResId)
+				.setCancelable(false)
+				.setPositiveButton(rightBtnRes, rightBtnListener)
+				.setNegativeButton(0, null);
+		
+		mAlertDialog.show();
 	}
 	
 	public void dismissWarningDialog() {
-		if(mWarningdialog != null && mWarningdialog.isShowing()) {
-			mWarningdialog.dismiss();
+		if(mAlertDialog != null && mAlertDialog.isShowing()) {
+			mAlertDialog.dismiss();
+			mAlertDialog = null;
+		}
+	}
+	
+	public boolean isDialogShow() {
+		if(mAlertDialog != null && mAlertDialog.isShowing()) {
+			return true;
+		} else {
+			return false;
 		}
 	}
 	
@@ -840,8 +858,8 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
     	} else {
     		mTitleTv.setText(UIUtil.getIdByName(this, "string", "v5_chat_title"));
     	}
-    	if (mWarningdialog != null && mWarningdialog.isShowing()) {
-    		mWarningdialog.dismiss();
+    	if (mAlertDialog != null && mAlertDialog.isShowing()) {
+    		mAlertDialog.dismiss();
     	}
     	if (!isConnected) { // 仅首次连接成功执行下列操作
     		if (null != V5ClientAgent.getInstance().getChatActivityListener()) {
@@ -950,26 +968,21 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
 				mTitleTv.setText(UIUtil.getIdByName(this, "string", "v5_title_connect_closed"));
 				if (V5ClientAgent.getInstance().isForeground()) {
 //					showToast(UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_connect_no_network"));
-					if (mWarningdialog == null) {	
-						mWarningdialog = new WarningDialog(ClientChatActivity.this);
-					} else if (mWarningdialog.isShowing()) {
+					if (isDialogShow()) {
 						break;
 					}
-					mWarningdialog.setDialogMode(WarningDialog.MODE_TWO_BUTTON);
-					mWarningdialog.getRightButton().setText(UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_btn_retry"));
-					mWarningdialog.setContent(UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_connect_no_network"));
-					mWarningdialog.setContentViewGravity(Gravity.CENTER);
-					mWarningdialog.setOnClickListener(new WarningDialogListener() {					
-						@Override
-						public void onClick(View view) {
-							mWarningdialog.dismiss();
-							if (view.getTag().equals("right")) {
-								V5ClientAgent.getInstance().reconnect();
-								showLoadingProgress();
-							}
-						}
-					});
-					mWarningdialog.show();
+					showWarningDialog(UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_connect_no_network"),
+							UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_btn_retry"), 
+							new View.OnClickListener() {
+								
+								@Override
+								public void onClick(View v) {
+									if (!V5ClientAgent.isConnected()) {
+										V5ClientAgent.getInstance().reconnect();
+										showLoadingProgress();
+									}
+								}
+							});
 				}
 				break;
 			case ExceptionConnectionError: // 连接异常出错，会自动重连
@@ -979,26 +992,21 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
 					} else {
 						mTitleTv.setText(UIUtil.getIdByName(this, "string", "v5_title_connect_closed"));
 	//					showToast(UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_connect_error"));
-						if (mWarningdialog == null) {	
-							mWarningdialog = new WarningDialog(ClientChatActivity.this);
-						} else if (mWarningdialog.isShowing()) {
+						if (isDialogShow()) {
 							break;
 						}
-						mWarningdialog.setDialogMode(WarningDialog.MODE_TWO_BUTTON);
-						mWarningdialog.getRightButton().setText(UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_btn_retry"));
-						mWarningdialog.setContent(UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_connect_error"));
-						mWarningdialog.setContentViewGravity(Gravity.CENTER);
-						mWarningdialog.setOnClickListener(new WarningDialogListener() {					
-							@Override
-							public void onClick(View view) {
-								mWarningdialog.dismiss();
-								if (view.getTag().equals("right")) {
-									V5ClientAgent.getInstance().reconnect();
-									showLoadingProgress();
-								}
-							}
-						});
-						mWarningdialog.show();
+						showWarningDialog(UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_connect_error"),
+								UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_btn_retry"), 
+								new View.OnClickListener() {
+									
+									@Override
+									public void onClick(View v) {
+										if (!V5ClientAgent.isConnected()) {
+											V5ClientAgent.getInstance().reconnect();
+											showLoadingProgress();
+										}
+									}
+								});
 					}
 				}
 				break;
@@ -1009,26 +1017,21 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
 					} else {
 						mTitleTv.setText(UIUtil.getIdByName(this, "string", "v5_title_connect_closed"));
 	//					showToast(UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_connect_error"));
-						if (mWarningdialog == null) {	
-							mWarningdialog = new WarningDialog(ClientChatActivity.this);
-						} else if (mWarningdialog.isShowing()) {
+						if (isDialogShow()) {
 							break;
 						}
-						mWarningdialog.setDialogMode(WarningDialog.MODE_TWO_BUTTON);
-						mWarningdialog.getRightButton().setText(UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_btn_retry"));
-						mWarningdialog.setContent(UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_connect_error"));
-						mWarningdialog.setContentViewGravity(Gravity.CENTER);
-						mWarningdialog.setOnClickListener(new WarningDialogListener() {					
-							@Override
-							public void onClick(View view) {
-								mWarningdialog.dismiss();
-								if (view.getTag().equals("right")) {
-									V5ClientAgent.getInstance().reconnect();
-									showLoadingProgress();
-								}
-							}
-						});
-						mWarningdialog.show();
+						showWarningDialog(UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_connect_error"),
+								UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_btn_retry"), 
+								new View.OnClickListener() {
+									
+									@Override
+									public void onClick(View v) {
+										if (!V5ClientAgent.isConnected()) {
+											V5ClientAgent.getInstance().reconnect();
+											showLoadingProgress();
+										}
+									}
+								});
 					}
 				}
 				break;
@@ -1043,26 +1046,21 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
 						mHandler.sendEmptyMessageDelayed(HDL_CHECK_CONNECT, RECON_DELAY);
 					} else {
 						mTitleTv.setText(UIUtil.getIdByName(this, "string", "v5_title_connect_closed"));
-						if (mWarningdialog == null) {	
-							mWarningdialog = new WarningDialog(ClientChatActivity.this);
-						} else if (mWarningdialog.isShowing()) {
+						if (isDialogShow()) {
 							break;
 						}
-						mWarningdialog.setDialogMode(WarningDialog.MODE_TWO_BUTTON);
-						mWarningdialog.getRightButton().setText(UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_btn_retry"));
-						mWarningdialog.setContent(UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_connect_error"));
-						mWarningdialog.setContentViewGravity(Gravity.CENTER);
-						mWarningdialog.setOnClickListener(new WarningDialogListener() {					
-							@Override
-							public void onClick(View view) {
-								mWarningdialog.dismiss();
-								if (view.getTag().equals("right")) {
-									V5ClientAgent.getInstance().reconnect();
-									showLoadingProgress();
-								}
-							}
-						});
-						mWarningdialog.show();
+						showWarningDialog(UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_connect_error"),
+								UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_btn_retry"), 
+								new View.OnClickListener() {
+									
+									@Override
+									public void onClick(View v) {
+										if (!V5ClientAgent.isConnected()) {
+											V5ClientAgent.getInstance().reconnect();
+											showLoadingProgress();
+										}
+									}
+								});
 					}
 				}
 				break;
@@ -1073,26 +1071,21 @@ public class ClientChatActivity extends Activity implements V5MessageListener,
 						mHandler.sendEmptyMessageDelayed(HDL_CHECK_CONNECT, RECON_DELAY);
 					} else {
 						mTitleTv.setText(UIUtil.getIdByName(this, "string", "v5_title_socket_timeout"));
-						if (mWarningdialog == null) {	
-							mWarningdialog = new WarningDialog(ClientChatActivity.this);
-						} else if (mWarningdialog.isShowing()) {
+						if (isDialogShow()) {
 							break;
 						}
-						mWarningdialog.setDialogMode(WarningDialog.MODE_TWO_BUTTON);
-						mWarningdialog.getRightButton().setText(UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_btn_retry"));
-						mWarningdialog.setContent(UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_connect_timeout"));
-						mWarningdialog.setContentViewGravity(Gravity.CENTER);
-						mWarningdialog.setOnClickListener(new WarningDialogListener() {					
-							@Override
-							public void onClick(View view) {
-								mWarningdialog.dismiss();
-								if (view.getTag().equals("right")) {
-									V5ClientAgent.getInstance().reconnect();
-									showLoadingProgress();
-								}
-							}
-						});
-						mWarningdialog.show();
+						showWarningDialog(UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_connect_timeout"),
+								UIUtil.getIdByName(ClientChatActivity.this, "string", "v5_btn_retry"), 
+								new View.OnClickListener() {
+									
+									@Override
+									public void onClick(View v) {
+										if (!V5ClientAgent.isConnected()) {
+											V5ClientAgent.getInstance().reconnect();
+											showLoadingProgress();
+										}
+									}
+								});
 					}
 				}
 				break;

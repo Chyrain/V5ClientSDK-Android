@@ -12,7 +12,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
@@ -29,11 +28,10 @@ import com.v5kf.client.ui.utils.FileUtil;
 import com.v5kf.client.ui.utils.ImageLoader;
 import com.v5kf.client.ui.utils.ImageLoader.ImageLoaderListener;
 import com.v5kf.client.ui.utils.UIUtil;
+import com.v5kf.client.ui.widget.AlertDialog;
 import com.v5kf.client.ui.widget.PhotoView;
 import com.v5kf.client.ui.widget.PhotoViewAttacher.OnPhotoTapListener;
 import com.v5kf.client.ui.widget.PhotoViewAttacher.OnViewTapListener;
-import com.v5kf.client.ui.widget.WarningDialog;
-import com.v5kf.client.ui.widget.WarningDialog.WarningDialogListener;
 
 public class ShowImageActivity extends Activity implements ImageLoaderListener {
 
@@ -133,22 +131,19 @@ public class ShowImageActivity extends Activity implements ImageLoaderListener {
 			@Override
 			public boolean onLongClick(View v) {
 				Logger.d("ShowImageActivity", "[onLongClick]");
-				final WarningDialog mWarningdialog = new WarningDialog(ShowImageActivity.this);
-				mWarningdialog.setDialogMode(WarningDialog.MODE_TWO_BUTTON);
-				mWarningdialog.setContent(UIUtil.getIdByName(ShowImageActivity.this, "string", "v5_save_image"));
-				mWarningdialog.setContentViewGravity(Gravity.CENTER);
-				mWarningdialog.setOnClickListener(new WarningDialogListener() {
+				new AlertDialog(ShowImageActivity.this).builder()
+				.setTitle(UIUtil.getIdByName(getApplicationContext(), "string", "v5_tips"))
+				.setMsg(UIUtil.getIdByName(ShowImageActivity.this, "string", "v5_save_image"))
+				.setCancelable(false)
+				.setPositiveButton(0, new OnClickListener() {
 					
 					@Override
-					public void onClick(View view) {
-						mWarningdialog.dismiss();
-						if (view.getTag().equals("right")) {
-							saveImage();
-						}
+					public void onClick(View v) {
+						saveImage();
 					}
-				});
-				
-				mWarningdialog.show();
+				})
+				.setNegativeButton(0, null)
+				.show();
 				return true;
 			}
 		});

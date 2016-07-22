@@ -2,6 +2,8 @@ package com.v5kf.client.ui.keyboard;
 
 import java.util.ArrayList;
 
+import com.v5kf.client.ui.emojicon.QFaceiconUtil;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -215,8 +217,12 @@ public class DBHelper {
 
                     ArrayList<EmoticonBean> emoticonList = null;
                     if (!TextUtils.isEmpty(name)) {
-                        String sqlGetEmoticonBean = "select * from " + TABLE_NAME_EMOTICONS + " where " + TableColumns.EmoticonColumns.EMOTICONSET_NAME + " = '" + name + "'";
-                        emoticonList = queryEmoticonBeanList(sqlGetEmoticonBean);
+                    	if (name.equals("qface")) {
+                    		emoticonList = getEmoticonBeanList();
+                    	} else {
+                    		String sqlGetEmoticonBean = "select * from " + TABLE_NAME_EMOTICONS + " where " + TableColumns.EmoticonColumns.EMOTICONSET_NAME + " = '" + name + "'";
+                        	emoticonList = queryEmoticonBeanList(sqlGetEmoticonBean);
+                    	}
                     }
 
 //                    int pageCount = 0;
@@ -247,6 +253,28 @@ public class DBHelper {
         return null;
     }
 
+    /**
+     * faceMap获得 “符号表情”对应表情图片
+     * @return
+     */
+    private ArrayList<EmoticonBean> getEmoticonBeanList() {
+    	ArrayList<EmoticonBean> beanList = new ArrayList<EmoticonBean>();
+    	int count = QFaceiconUtil.faceMap.size();
+        if (count > 0) {
+            for (String key : QFaceiconUtil.faceMap.keySet()) {
+                long eventType = 0;
+                String content = key; // QFaceiconUtil.faceTextMap.get(key);
+                String iconUri = "drawable://" + QFaceiconUtil.faceMap.get(key);
+                EmoticonBean bean = new EmoticonBean(eventType, iconUri, content);
+                beanList.add(bean);
+                if (beanList.size() > 99) {
+                	break;
+                }
+            }
+            return beanList;
+        }
+		return beanList;
+	}
 
     public void cleanup() {
         if (this.db != null) {

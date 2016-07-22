@@ -13,6 +13,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
+import android.text.TextUtils;
 
 import com.v5kf.client.lib.entity.V5Message;
 
@@ -29,18 +30,17 @@ public class V5ClientConfig {
 	private static int LOG_LEVEL = LOG_LV_VERBOS; // 日志显示级别
 	private static boolean LOG_SHOW = true;	// 是否显示日志
 	public static final boolean USE_THUMBNAIL = true; // 使用缩略图
-	public static boolean AUTO_RETRY_ONERROR = false; // 连接断开是否自动重试(否则弹出对话框点击重试)
+	public static boolean AUTO_RETRY_ONERROR = true; // 连接断开是否自动重试(否则弹出对话框点击重试)
 	
 	public static int SOCKET_TIMEOUT = 10000; // 超时时间10s
 	
 	protected static boolean AUTO_WORKER_SERVICE = false;
-	protected static boolean NOTIFICATION_SHOW = true;
 //	protected static final int NOTIFICATION_ID = 23;
 	protected static final String ACTION_NOTIFICATION = "com.v5kf.android.intent.notification";
 	protected static final String ACTION_NEW_MESSAGE = "com.v5kf.android.intent.action_message";
 	
 	
-	public static boolean DEBUG = false; // 是否debug模式(连接debug服务端)
+	public static boolean DEBUG = true; // 是否debug模式(连接debug服务端)
 	public static boolean USE_HTTPS = true; // 默认使用https访问
 	
 	/**
@@ -69,7 +69,7 @@ public class V5ClientConfig {
 	// site、account
 	private String uid; // 多用户账号APP必须
 	private String nickname;
-	private String avatar; 
+	private String avatar;
 	private int vip; // 0-5
 	private int gender;
 	
@@ -78,6 +78,11 @@ public class V5ClientConfig {
 	private String workerName;
 	private String workerPhoto;
 	private int workerType; // 人工or机器人or机器人托管
+	
+	/* 机器人信息 */
+	private String robotName;
+	private String robotPhoto;
+	private String robotIntro;
 	
 	/* SDK基础配置信息(AndroidManifest.xml)，需要缓存本地 */
 	private String siteId;
@@ -93,6 +98,9 @@ public class V5ClientConfig {
 	private String deviceToken; /* 一个App对应一个deviceToken */
 	/* 通知 */
 	private String notificationTitle;
+	/* 是否发送心跳包  */
+	private boolean heartBeatEnable = true;
+	private int heartBeatTime = 30000; // 单位ms
 	
 	private Context mContext;
 	private static V5ClientConfig mClientConfig = null;
@@ -108,13 +116,13 @@ public class V5ClientConfig {
 	 * @return
 	 */
 	public static V5ClientConfig getInstance(Context context) {
-		if(mClientConfig == null){
-	        synchronized (V5ClientConfig.class) {   // 保证了同一时间只能只能有一个对象访问此同步块        
-	            if(mClientConfig == null){
-	            	mClientConfig = new V5ClientConfig(context);
-	        }
-	      }
-	    }
+		if(mClientConfig == null) {
+			synchronized (V5ClientConfig.class) {   // 保证了同一时间只能只能有一个对象访问此同步块        
+				if(mClientConfig == null) {
+					mClientConfig = new V5ClientConfig(context);
+				}
+			}
+		}
 		return mClientConfig;
 	}
 	
@@ -603,7 +611,7 @@ public class V5ClientConfig {
 	}
 	
 	protected static String getPictureThumbnailFormatURL() { //APP_PIC_V5_THUMBNAIL_FMT
-		return (USE_HTTPS ? "https" : "http") + "://chat.v5kf.com/" + (DEBUG ? "debug" : "public") + "/resource/%s/%s?w=350&h=350&q=60"; // 图片质量0-100
+		return (USE_HTTPS ? "https" : "http") + "://chat.v5kf.com/" + (DEBUG ? "debug" : "public") + "/resource/%s/%s/thumbnail"; // 图片质量0-100
 	}
 	
 	protected static String getResourceFormatURL() { //APP_RESOURCE_V5_FMT
@@ -652,6 +660,82 @@ public class V5ClientConfig {
 
 	public void setVip(int vip) {
 		this.vip = vip;
+	}
+
+	public String getRobotName() {
+		if (!TextUtils.isEmpty(this.robotName)) {
+			return this.robotName;
+		} else {
+			V5ConfigSP config = new V5ConfigSP(mContext);
+			this.robotName = config.readString("v5_robot_name");
+		}
+		return robotName;
+	}
+
+	public void setRobotName(String name) {
+		if (null == name || name.isEmpty()) {
+			return;
+		} else {
+			this.robotName = name;
+			V5ConfigSP configSP = new V5ConfigSP(mContext);
+			configSP.saveString("v5_robot_name", name);
+		}
+	}
+
+	public String getRobotPhoto() {
+		if (!TextUtils.isEmpty(this.robotPhoto)) {
+			return this.robotPhoto;
+		} else {
+			V5ConfigSP config = new V5ConfigSP(mContext);
+			this.robotPhoto = config.readString("v5_robot_photo");
+		}
+		return robotPhoto;
+	}
+
+	public void setRobotPhoto(String photo) {
+		if (null == photo || photo.isEmpty()) {
+			return;
+		} else {
+			this.robotPhoto = photo;
+			V5ConfigSP configSP = new V5ConfigSP(mContext);
+			configSP.saveString("v5_robot_photo", photo);
+		}
+	}
+
+	public String getRobotIntro() {
+		if (!TextUtils.isEmpty(this.robotIntro)) {
+			return this.robotIntro;
+		} else {
+			V5ConfigSP config = new V5ConfigSP(mContext);
+			this.robotIntro = config.readString("v5_robot_intro");
+		}
+		return robotIntro;
+	}
+
+	public void setRobotIntro(String intro) {
+		if (null == intro || intro.isEmpty()) {
+			return;
+		} else {
+			this.robotIntro = intro;
+			V5ConfigSP configSP = new V5ConfigSP(mContext);
+			configSP.saveString("v5_robot_intro", intro);
+		}
+	}
+
+	public boolean isHeartBeatEnable() {
+		return heartBeatEnable;
+	}
+
+	public void setHeartBeatEnable(boolean heartBeatEnable) {
+		this.heartBeatEnable = heartBeatEnable;
+	}
+
+	public int getHeartBeatTime() {
+		return heartBeatTime;
+	}
+
+	public void setHeartBeatTime(int heartBeatTime) {
+		this.heartBeatTime = heartBeatTime;
 	}
 
 //	public void setWorkerPhoto(String photo, String nickname) {

@@ -664,7 +664,11 @@ public class V5Util {
 				picUrl = picUrl + "/thumbnail";
 			} else if (V5ClientConfig.USE_THUMBNAIL && 
 					(picUrl.contains("mmbiz.qpic.cn/mmbiz/") || picUrl.contains("chat.v5kf.com/"))) {
-				picUrl = String.format(V5ClientConfig.getPictureThumbnailFormatURL(), siteId, imageMessage.getMessage_id());
+				if (TextUtils.isEmpty(picUrl) && imageMessage.getMessage_id() != null && !imageMessage.getMessage_id().isEmpty()) {
+					picUrl = String.format(V5ClientConfig.getPictureThumbnailFormatURL(), siteId, imageMessage.getMessage_id());
+				} else {
+					picUrl = picUrl + "/thumbnail";
+				}
 			}
 		} else if (!TextUtils.isEmpty(imageMessage.getMedia_id())) {
 			imageMessage.setPic_url(String.format(V5ClientConfig.getResourceFormatURL(), siteId, imageMessage.getMessage_id()));

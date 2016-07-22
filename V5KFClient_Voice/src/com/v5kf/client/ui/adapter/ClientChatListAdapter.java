@@ -259,10 +259,6 @@ public class ClientChatListAdapter extends BaseAdapter {
 		break;
 		
 		case TYPE_LOCATION_R: { // 位置-发出
-			if (showAvatar) {
-				
-			}
-			
 			V5LocationMessage msgContent = (V5LocationMessage) message;
 			ImageLoader mapImgLoader = new ImageLoader(mContext, true, UIUtil.getIdByName(mContext, "drawable", "v5_img_src_loading"));
         	double lat = msgContent.getX();
@@ -285,7 +281,7 @@ public class ClientChatListAdapter extends BaseAdapter {
         	double lat = msgContent.getX();
         	double lng = msgContent.getY();
         	String url = msgContent.getLocationImageURL();
-//        	Logger.i(TAG, "[地图] URL:" + url);
+        	Logger.i(TAG, "[地图] URL:" + url);
         	
         	// 异步加载图片和位置描述信息
         	mapImgLoader.DisplayImage(url, holder.mMapIv);
@@ -322,9 +318,9 @@ public class ClientChatListAdapter extends BaseAdapter {
 		break;
 		
 		case TYPE_VOICE_R: { // 语音-发出
-			convertView.findViewById(UIUtil.getIdByName(mContext, "id", "id_right_voice_layout"))
+        	convertView.findViewById(UIUtil.getIdByName(mContext, "id", "id_right_voice_layout"))
 			.setOnClickListener(new ItemClick(position, viewType, holder));
-			
+        	
 			// 加载语音
 			final V5VoiceMessage voiceMessage = (V5VoiceMessage)message;
 //			Logger.d(TAG, position + " _R list load Voice ----- duration:" + voiceMessage.getDuration() + " filePath:" + voiceMessage.getFilePath());
@@ -360,7 +356,7 @@ public class ClientChatListAdapter extends BaseAdapter {
 					((V5VoiceMessage)msg).setFilePath(media.getLocalPath());
 					((V5VoiceMessage)msg).setDuration(media.getDuration());
 //					Logger.w(TAG, "_R MediaLoader Voice onSuccess:" + media.getDuration() + media.getLocalPath());
-					double duration = media.getDuration()/1000.0f;
+					double duration = (media.getDuration()/1000.0f);
 					if (duration < 1) {
 						duration = 1;
 					}
@@ -420,7 +416,7 @@ public class ClientChatListAdapter extends BaseAdapter {
 //					Logger.w(TAG, "_L MediaLoader Voice onSuccess:" + media.getDuration() + media.getLocalPath());
 					((V5VoiceMessage)msg).setFilePath(media.getLocalPath());
 					((V5VoiceMessage)msg).setDuration(media.getDuration());
-					double duration = media.getDuration()/1000.0f;
+					double duration = (media.getDuration()/1000.0f);
 					if (duration < 1) {
 						duration = 1;
 					}
@@ -445,8 +441,11 @@ public class ClientChatListAdapter extends BaseAdapter {
 			break;
 		
 		default: {
-			String str = message.getDefaultContent(mContext) == null ? "" : message.getDefaultContent(mContext);
-			Spanned text = Html.fromHtml(str.replace("\n", "<br>"));
+			String content = message.getDefaultContent(mContext) == null ? "" : message.getDefaultContent(mContext);
+			content = content.replaceAll("/::<", "/::&lt;");
+			content = content.replaceAll("/:<", "/:&lt;");
+	    	content = content.replaceAll("\n", "<br>");
+			Spanned text = Html.fromHtml(content);
 			holder.mMsg.setText(text);
 			holder.mMsg.setMovementMethod(LinkMovementMethod.getInstance());
 			
@@ -467,7 +466,7 @@ public class ClientChatListAdapter extends BaseAdapter {
 							boolean used = false;
 							if (null != V5ClientAgent.getInstance().getURLClickListener()) {
 								used = V5ClientAgent.getInstance().getURLClickListener().onURLClick(v.getContext(), ClientLinkType.clientLinkTypeURL, url);
-							}
+							} 
 							if (!used) {
 								Intent intent = new Intent(mContext, WebViewActivity.class);
 								intent.putExtra("url", url);
@@ -510,6 +509,7 @@ public class ClientChatListAdapter extends BaseAdapter {
         	} else if (message.getDirection() == V5MessageDefine.MSG_DIR_FROM_ROBOT ||
 					message.getDirection() == V5MessageDefine.MSG_DIR_COMMENT) {
 				photoDefaultId = UIUtil.getIdByName(mContext, "drawable", "v5_avatar_robot");
+				photoUrl = V5ClientAgent.getInstance().getConfig().getRobotPhoto();
 			} else if (message.getDirection() == V5MessageDefine.MSG_DIR_TO_CUSTOMER) {
 				photoDefaultId = UIUtil.getIdByName(mContext, "drawable", "v5_avatar_worker");
 				V5ConfigSP configSP = new V5ConfigSP(mContext);

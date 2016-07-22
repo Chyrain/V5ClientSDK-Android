@@ -5,9 +5,6 @@ import org.json.JSONObject;
 
 import android.app.Activity;
 import android.content.Context;
-import android.media.Ringtone;
-import android.media.RingtoneManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -20,9 +17,9 @@ import android.widget.Toast;
 import com.v5kf.client.lib.Logger;
 import com.v5kf.client.lib.V5ClientAgent;
 import com.v5kf.client.lib.V5ClientAgent.ClientLinkType;
-import com.v5kf.client.lib.V5ClientAgent.ClientOpenMode;
 import com.v5kf.client.lib.V5ClientAgent.ClientServingStatus;
 import com.v5kf.client.lib.V5ClientConfig;
+import com.v5kf.client.lib.entity.V5ControlMessage;
 import com.v5kf.client.lib.entity.V5Message;
 import com.v5kf.client.ui.ClientChatActivity;
 import com.v5kf.client.ui.callback.OnChatActivityListener;
@@ -49,16 +46,18 @@ public class WelcomeActivity extends Activity implements OnChatActivityListener 
 		
 		// V5客服系统客户端配置
         V5ClientConfig config = V5ClientConfig.getInstance(WelcomeActivity.this);
-        V5ClientConfig.USE_HTTPS = false; // 使用加密连接，默认true
-        V5ClientConfig.DEBUG = false;
+        V5ClientConfig.USE_HTTPS = true; // 使用加密连接，默认true
+        V5ClientConfig.SOCKET_TIMEOUT = 20000; // 超时20s
+        V5ClientConfig.DEBUG = true; // 连接debug服务器调试
+        config.setHeartBeatEnable(false);
         config.setShowLog(true); // 显示日志，默认为true
         config.setLogLevel(V5ClientConfig.LOG_LV_DEBUG); // 显示日志级别，默认为全部显示
         
-        config.setNickname("android_sdk_chyrain昵称就是要长一点"); // 设置用户昵称，不设置会默认生成
+        config.setNickname("android_sdk_chyrain"); // 设置用户昵称，不设置会默认生成
         config.setGender(1); // 设置用户性别: 0-未知  1-男  2-女
         // 设置用户头像URL
 		config.setAvatar("http://debugimg-10013434.image.myqcloud.com/fe1382d100019cfb572b1934af3d2c04/thumbnail"); 
-        config.setUid("android_sdk_chyrain"); // 设置用户ID
+        //config.setUid("android_sdk_chyrain"); // 设置用户ID
         //config.setDeviceToken(""); // 集成第三方推送(腾讯信鸽、百度云推)时设置此参数以在离开会话界面时接收推送消息
         Logger.d(TAG, "init visitor_id:" + config.getV5VisitorId());
 	}
@@ -114,6 +113,13 @@ public class WelcomeActivity extends Activity implements OnChatActivityListener 
 							message.setCustom_content(customContent);
 							
 							flag_userBrowseSomething = false;
+						}
+						if (message.getDefaultContent(getApplicationContext()).equals("退出人工")) {
+							// 退出人工 TODO
+							V5ControlMessage controlMsg = new V5ControlMessage(2);
+							V5ClientAgent.getInstance().sendMessage(controlMsg, null);
+							
+							return message;
 						}
 						return message; // 注：必须将消息对象以返回值返回
 					}

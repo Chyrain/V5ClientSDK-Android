@@ -175,7 +175,7 @@ public class HttpUtil {
 			} else if (method == HttpMethod.GET) {
 				urlConnection.setRequestMethod("GET");
 			}
-			// 设置请求的头  
+			// 设置请求的头
 //			urlConnection.setRequestProperty("Connection", "keep-alive");
 //            urlConnection.setRequestProperty("origin", V5ClientConfig.ORIGIN);
 //            urlConnection.setRequestProperty("Charset","UTF-8");

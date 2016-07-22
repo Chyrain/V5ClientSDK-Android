@@ -1,6 +1,7 @@
 package com.v5kf.v5sdkdemo;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -13,6 +14,7 @@ import com.v5kf.client.lib.Logger;
 import com.v5kf.client.lib.V5ClientAgent;
 import com.v5kf.client.lib.V5ClientAgent.ClientServingStatus;
 import com.v5kf.client.lib.V5ClientConfig;
+import com.v5kf.client.lib.V5ClientService;
 import com.v5kf.client.lib.V5KFException;
 import com.v5kf.client.lib.V5MessageManager;
 import com.v5kf.client.lib.callback.MessageSendCallback;
@@ -89,6 +91,8 @@ public class MainActivity extends Activity {
 	}
 
 	private void initView() {
+		V5ClientAgent.getInstance().switchToArtificialService(null);
+		
 		mSendBtn.setOnClickListener(new OnClickListener() {
 			
 			@Override
@@ -160,8 +164,8 @@ public class MainActivity extends Activity {
 	private void configV5Client() {
 		// V5客服系统客户端配置
         V5ClientConfig config = V5ClientConfig.getInstance(this);
-        V5ClientConfig.USE_HTTPS = true; // 使用加密连接，默认true
-        V5ClientConfig.RUN_ON_UI_THREAD = false;
+        V5ClientConfig.USE_HTTPS = false; // 使用加密连接，默认true
+        V5ClientConfig.CALLBACK_ON_UI_THREAD = false; // 回调是否在UI线程执行
         config.setShowLog(true); // 显示日志，默认为true
         config.setLogLevel(V5ClientConfig.LOG_LV_DEBUG); // 显示日志级别，默认为全部显示
         
@@ -174,7 +178,6 @@ public class MainActivity extends Activity {
 		config.setLocalMessageCacheEnable(false); // 不保存消息
 		Logger.d(TAG, "get visitor_id:" + config.getV5VisitorId());
 	}
-
 
 	private V5MessageListener messageListener = new V5MessageListener() {
 		
@@ -256,6 +259,8 @@ public class MainActivity extends Activity {
 							break;
 						case ExceptionSocketTimeout: // 响应超时
 							// 超时时间 V5ClientConfig.SOCKET_TIMEOUT
+							Intent i = new Intent(getApplicationContext(), V5ClientService.class);
+							startService(i);
 							break;
 						default:
 							break;
@@ -268,6 +273,7 @@ public class MainActivity extends Activity {
 		@Override
 		public void onConnect() {
 			// TODO Auto-generated method stub
+			V5ClientAgent.getInstance().getStatus();
 			mStatusTv.post(new Runnable() {
 				
 				@Override

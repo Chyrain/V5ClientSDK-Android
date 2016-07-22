@@ -1,7 +1,9 @@
 package com.v5kf.client.lib;
 
 import java.lang.ref.WeakReference;
+import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -11,8 +13,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.app.AlarmManager;
 import android.app.Notification;
-import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -20,7 +23,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.os.Build;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -31,32 +33,32 @@ import com.v5kf.client.lib.NetworkManager.NetworkListener;
 import com.v5kf.client.lib.V5ClientAgent.ClientServingStatus;
 import com.v5kf.client.lib.V5ClientAgent.OnMessageRunnable;
 import com.v5kf.client.lib.V5KFException.V5ExceptionStatus;
+import com.v5kf.client.lib.V5WebSocketHelper.WebsocketListener;
 import com.v5kf.client.lib.entity.V5Message;
 import com.v5kf.client.lib.entity.V5MessageDefine;
-import com.v5kf.client.lib.websocket.WebSocketClient;
 
-public class V5ClientService extends Service implements NetworkListener, WebSocketClient.Listener {
+public class V5ClientService extends Service implements NetworkListener, WebsocketListener {
 
 	public static final String TAG = "V5ClientService";
-//	private static final String ACTION_ALARM = "com.v5kf.client.alarm";
+	private static final String ACTION_ALARM = "com.v5kf.client.alarm";
+	private static final int HDL_CONNECT = 11;
 	public static final String ACTION_SEND = "com.v5kf.client.send"; 
 	public static final String ACTION_STOP = "com.v5kf.client.stop"; 
 
 	private ServiceReceiver mMsgReceiver;
-//	private ServiceReceiver mAlarmReceiver;
 	private NetworkManager mNetReceiver;
-	Handler mHandler;
+	private ServiceHandler mHandler;
 	private String mUrl;
-	private static WebSocketClient mClient;
+	private static V5WebSocketHelper mClient;
 	
 	private DBHelper mDBHelper;
 	private V5ConfigSP mConfigSP;
 	private boolean cacheLocalMsg;
 	private long mSessionStart;
 	
-	private int mReAuthCount = 0;
+	private int mRetryCount = 0;
 	
-	private boolean _block = false;
+	private boolean _connectBlock = false;
 	
 	protected static boolean isConnected() {
 		if (mClient != null && mClient.isConnected()) {
@@ -69,17 +71,15 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 	protected static void reConnect(Context context) {
 		Logger.i(TAG, "[reConnect]");
 		if (mClient != null) {
-			mClient.connect();
-		} else {
-			Intent i = new Intent(context, V5ClientService.class);
-			context.startService(i);
+			mClient.disconnect();
 		}
+		Intent i = new Intent(context, V5ClientService.class);
+		context.startService(i);
 	}
 
 	protected static void stop() {
 		if (mClient != null) {
-			mClient.close(1000, "Normal close");
-			mClient.disconnect();
+			mClient.disconnect(1000, "Normal close");
 		}
 	}
 	
@@ -98,13 +98,10 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 		
 		mMsgReceiver = new ServiceReceiver();
 		IntentFilter filter = new IntentFilter();
-		//filter.addAction(ACTION_ALARM);
+		filter.addAction(ACTION_ALARM);
 		filter.addAction(ACTION_SEND);
-		LocalBroadcastManager.getInstance(this).registerReceiver(mMsgReceiver, filter);
-		Logger.e(TAG, "onCreate -> registerReceiver");
-		
-//		mAlarmReceiver = new ServiceReceiver();
-//		registerReceiver(mAlarmReceiver, new IntentFilter(ACTION_ALARM));
+		registerReceiver(mMsgReceiver, filter);
+		//Logger.e(TAG, "onCreate -> registerReceiver");
 		
 		mNetReceiver = new NetworkManager();
 		NetworkManager.init(getApplicationContext());
@@ -113,31 +110,31 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 				new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
 
 		NetworkManager.addNetworkListener(this);
-//		initAlarm();
+		initAlarm();
 	}
 	
-//	/**
-//	 * 定时任务初始化
-//	 */
-//	private void initAlarm() {
-//		Intent intent = new Intent(ACTION_ALARM);
-//		PendingIntent pi = PendingIntent.getBroadcast(this, 0, intent, 0);
-//		AlarmManager am = (AlarmManager)getSystemService(ALARM_SERVICE);
-//		am.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 20 * 1000, 30 * 1000, pi);
-//		//Logger.v(TAG, "[Alarm - start] -> com.v5kf.client.alarm");
-//	}
-//	
-//	/**
-//	 * 取消定时任务
-//	 */
-//	private void cancelAlarm() {
-//		AlarmManager am = (AlarmManager)getSystemService(ALARM_SERVICE);  
-//        Intent intent = new Intent(ACTION_ALARM);  
-//        PendingIntent pi = PendingIntent.getBroadcast(this, 0, intent, 0);
-//        if (pi != null){  
-//            am.cancel(pi);
-//        }
-//	}
+	/**
+	 * 定时任务初始化
+	 */
+	private void initAlarm() {
+		Intent intent = new Intent(ACTION_ALARM);
+		PendingIntent pi = PendingIntent.getBroadcast(this, 0, intent, 0);
+		AlarmManager am = (AlarmManager)getSystemService(ALARM_SERVICE);
+		am.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 20 * 1000, V5ClientConfig.getInstance(getApplicationContext()).getHeartBeatTime(), pi);
+		//Logger.v(TAG, "[Alarm - start] -> com.v5kf.client.alarm");
+	}
+	
+	/**
+	 * 取消定时任务
+	 */
+	private void cancelAlarm() {
+		AlarmManager am = (AlarmManager)getSystemService(ALARM_SERVICE);  
+        Intent intent = new Intent(ACTION_ALARM);  
+        PendingIntent pi = PendingIntent.getBroadcast(this, 0, intent, 0);
+        if (pi != null){  
+            am.cancel(pi);
+        }
+	}
 
 	@Override
 	public IBinder onBind(Intent intent) {
@@ -166,52 +163,62 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 	}
 	
 	private synchronized void connectWebsocket(boolean forceNew) {
-		if (_block) {
-			Logger.w(TAG, "[connectWebsocket] _block return");
-			return;
-		}
 		if (V5ClientAgent.getInstance().isExit()) {
 			return;
 		}
-		_block = true;
+		if (mClient != null && mClient.isConnected()) {
+			Logger.w(TAG, "[connectWebsocket] isConnected return");
+			return;
+		}
+		if (_connectBlock) {
+			Logger.w(TAG, "[connectWebsocket] _block return");
+			return;
+		}
+		_connectBlock = true;
+		
 		Logger.d(TAG, "[connectWebsocket] auth:" +  V5ClientConfig.getInstance(this).getAuthorization());
 		V5ClientConfig config = V5ClientConfig.getInstance(this);
-		if (mClient != null && mClient.isConnected()) { // 已连接
-			Logger.i(TAG, "[connectWebsocket] -> mClient != null && mClient.isConnected() = true");
-			if (forceNew) {
-//				Logger.i(TAG, "disconnect and then forceNew client");
-//				mClient.disconnect(1, "Stop and new client");
-				mClient.disconnect();
-				mClient = null;
-				mUrl = String.format(Locale.CHINA, V5ClientConfig.getWSFormstURL(), config.getAuthorization()); 
-				mClient = new WebSocketClient(URI.create(mUrl), this, null);
-				mClient.connect();
-				return;
-			} else {
-				_block = false;
-				return;
-			}
-		} else if (mClient != null) {
-			Logger.i(TAG, "[connectWebsocket] -> mClient != null && mClient.isConnected() = false");
-			if (forceNew) {
-				Logger.i(TAG, "forceNew client");
-				mClient.disconnect();
-				mClient = null;
-				mUrl = String.format(Locale.CHINA, V5ClientConfig.getWSFormstURL(), config.getAuthorization()); 
-				mClient = new WebSocketClient(URI.create(mUrl), this, null);
-			}			
-			mClient.connect();
-			if (mUrl != null) {
-				Logger.d(TAG, "url:" + mUrl);
-			}
-		} else {
-			Logger.i(TAG, "[connectWebsocket] -> mClient == null");
+		
+		if (mClient != null) { // 已连接
+			mClient.disconnect();
+			mClient = null;
+		}
+//		if (mClient != null && mClient.isConnected()) { // 已连接
+//			Logger.i(TAG, "[connectWebsocket] -> mClient != null && mClient.isConnected() = true");
+//			if (forceNew) {
+////				Logger.i(TAG, "disconnect and then forceNew client");
+////				mClient.disconnect(1, "Stop and new client");
+//				mClient.disconnect();
+//				mClient = null;
+//				mUrl = String.format(Locale.CHINA, V5ClientConfig.getWSFormstURL(), config.getAuthorization()); 
+//				mClient = new V5WebSocketHelper(URI.create(mUrl), this, null);
+//				mClient.connect();
+//				return;
+//			} else {
+//				_block = false;
+//				return;
+//			}
+//		} else if (mClient != null) {
+//			Logger.i(TAG, "[connectWebsocket] -> mClient != null && mClient.isConnected() = false");
+//			if (forceNew) {
+//				Logger.i(TAG, "forceNew client");
+//				mClient.disconnect();
+//				mClient = null;
+//				mUrl = String.format(Locale.CHINA, V5ClientConfig.getWSFormstURL(), config.getAuthorization()); 
+//				mClient = new V5WebSocketHelper(URI.create(mUrl), this, null);
+//			}			
+//			mClient.connect();
+//			if (mUrl != null) {
+//				Logger.d(TAG, "url:" + mUrl);
+//			}
+//		} else {
+//			Logger.i(TAG, "[connectWebsocket] -> mClient == null");
 			if (config.getAuthorization() == null) {
-				//[修改]认证过期或者失效
-				if (mReAuthCount < 3) {
+				// [修改]认证过期或者失效
+				if (mRetryCount < 3) {
 					try {
 						V5ClientAgent.getInstance().doAccountAuth();
-						mReAuthCount++;
+						mRetryCount++;
 					} catch (JSONException e) {
 						//e.printStackTrace();
 						Log.e(TAG, "", e);
@@ -221,36 +228,33 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 					// [修改]通知界面是否重试
 					V5ClientAgent.getInstance().errorHandle(new V5KFException(V5ExceptionStatus.ExceptionWSAuthFailed, "authorization failed"));
 				}
-				_block = false;
+				_connectBlock = false;
 				return;
 			}
 			mUrl = String.format(Locale.CHINA, V5ClientConfig.getWSFormstURL(), config.getAuthorization()); 
-			mClient = new WebSocketClient(URI.create(mUrl), this, null);
+			mClient = new V5WebSocketHelper(URI.create(mUrl), this, null);
 			//Logger.d(TAG, "visitor_id:" + config.getV5VisitorId());
 			mClient.connect();
 			if (mUrl != null) {
-				Logger.d(TAG, "url:" + mUrl);
+				Logger.i(TAG, "mUrl:" + mUrl);
 			}
-		}
+//		}
 	}
 	
-//	private void keepService() {
-//		Logger.d(TAG, "[keepService] net:" + NetworkManager.isConnected(this));
-//		if (NetworkManager.isConnected(this)) { // 判断是否连接
-//			if (mClient == null) {
-//				Logger.i(TAG, "[keepService] -> mClient is null -> new client");
-//				connectWebsocket();
-//			} else if (!mClient.isConnected()) {
-//				Logger.i(TAG, "[keepService] -> not connect -> try connect");
-//				mClient.connect();
-//			} else {
-//				Logger.i(TAG, "[keepService] -> connected");
-//				mClient.ping();
-//			}
-//		} else {
-//			Logger.i(TAG, "[keepService] -> Network not connect");
-//		}
-//	}
+	private void keepService() {
+		Logger.d(TAG, "[keepService] connect:" + isConnected() + " network:" + NetworkManager.isConnected(this));
+		if (NetworkManager.isConnected(this) ) { // 判断是否连接
+			if (isConnected()) {
+				Logger.i(TAG, "[keepService] -> connected");
+				mClient.ping();
+			} else {
+				Logger.i(TAG, "[keepService] -> not connect -> try connect");
+				connectWebsocket();
+			}
+		} else {
+			Logger.i(TAG, "[keepService] -> Network not connect");
+		}
+	}
 
 	@Override
 	public void onDestroy() {
@@ -258,16 +262,14 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 		Logger.w(TAG, "V5ClientService -> onDestroy");
 		if (mClient != null) {
 			// 发送断连帧
-			mClient.close(1000, "Normal close");
-			mClient.disconnect();
+			mClient.disconnect(1000, "Normal close");
 			mClient = null;
 		}
-		Logger.e(TAG, "onDestroy -> unregisterReceiver");
-		LocalBroadcastManager.getInstance(this).unregisterReceiver(mMsgReceiver);
-//		unregisterReceiver(mAlarmReceiver);
+		//Logger.e(TAG, "onDestroy -> unregisterReceiver");
+		unregisterReceiver(mMsgReceiver);
 		unregisterReceiver(mNetReceiver);
 		NetworkManager.removeNetworkListener(this);
-//		cancelAlarm();
+		cancelAlarm();
 		
 //		if (!V5ClientAgent.getInstance().isExit()) {
 //			Intent restartIntent = new Intent(getApplicationContext(), V5ClientService.class);
@@ -290,7 +292,9 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 				Logger.w(TAG, "ServiceHandler has bean GC");
 			}
 			switch (msg.what) {
-			
+			case HDL_CONNECT:
+				mService.get().connectWebsocket();
+				break;
 			default:
 				break;
 			}
@@ -305,11 +309,12 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 				return;
 			}
 			Logger.i(TAG, "<>onReceiver<>:" + intent.getAction());
-//			if (intent.getAction().equals(ACTION_ALARM)) {
-//				// 定时检查
-//				//keepService();
-//			} else 
-			if (intent.getAction().equals(ACTION_SEND)) {
+			if (intent.getAction().equals(ACTION_ALARM)) {
+				// 定时心跳包
+				if (V5ClientConfig.getInstance(getApplicationContext()).isHeartBeatEnable()) {
+					keepService();
+				}
+			} else if (intent.getAction().equals(ACTION_SEND)) {
 				// 发送
 				String msg = intent.getStringExtra("v5_message");
 				if (null != msg) {
@@ -337,13 +342,16 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 			break;
 			
 		case NetworkManager.NETWORK_NONE:
-			
+			if (mClient != null) {
+				mClient.disconnect();
+			}
+			V5ClientAgent.getInstance().errorHandle(new V5KFException(V5ExceptionStatus.ExceptionNoNetwork, "no network"));
 			break;
 		}
 	}
 
 	public void sendMessage(String msg) {
-		Logger.d(TAG, ">>>sendMessage<<<");
+		Logger.d(TAG, ">>>sendMessage<<< :" + msg);
 		if (mClient != null && mClient.isConnected()) {
 			mClient.send(msg);
 			Logger.i(TAG, ">>>sendMessage<<<:" + msg);
@@ -357,15 +365,15 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 	@Override
 	public void onConnect() { // 连接成功后才可以开始调用消息接口
 		Logger.i(TAG, ">>>onConnect<<< URL:" + mUrl);
-		mReAuthCount = 0;
+		_connectBlock = false;
+		
+		mRetryCount = 0;
 		
 		V5ClientAgent.getInstance().sendOnLineMessage(); // 发上线消息
 		if (V5ClientConfig.AUTO_WORKER_SERVICE) { // 自动转人工客服
 			V5ClientAgent.getInstance().switchToArtificialService(null);
 		}
 		V5ClientAgent.getInstance().updateMessages();
-		
-		_block = false;
 	}
 
 	@Override
@@ -385,19 +393,6 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 					V5ClientAgent.getInstance().getHandler().post(new OnMessageRunnable(messageBean));
 				} else if (V5ClientAgent.getInstance().getMessageListener() != null) {
 					V5ClientAgent.getInstance().getMessageListener().onMessage(messageBean);
-				}
-				if (V5ClientConfig.NOTIFICATION_SHOW) { // 显示通知(自定义通知添加到此处)
-					Notification notification = V5ClientConfig.getNotification(getApplicationContext(), 
-							messageBean);
-					NotificationManager nm = V5ClientConfig.getNotificationManager(getApplicationContext());
-					nm.notify(V5ClientConfig.getNotifyId(getApplicationContext()), notification);
-					
-					// 发出消息广播
-					Intent intent = new Intent(V5ClientConfig.ACTION_NEW_MESSAGE);
-					Bundle bundle = new Bundle();
-					bundle.putSerializable("v5_message", messageBean);
-					intent.putExtras(bundle);
-					sendBroadcast(intent);
 				}
 			} else if (json.optString("o_type").equals("session")) {
 				if (json.optString("o_method").equals("get_status")) { // 对话状态信息：机器人或者客服信息
@@ -512,11 +507,12 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 
 	@Override
 	public void onDisconnect(int code, String reason) {
-		Logger.v(TAG, ">>>onDisconnect<<< [code:" + code + "]: " + reason);
+		Logger.w(TAG, ">>>onDisconnect<<< [code:" + code + "]: " + reason);
+		_connectBlock = false;
 		// 断开重连判断
 		if (V5ClientAgent.getInstance().isExit()) {
 			// 不重连
-			//stopSelf();
+			stopSelf();
 			Logger.w(TAG, "[onDisconnect] stop service");
 			return;
 		} else {
@@ -529,29 +525,32 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 					mClient = null;
 					connectWebsocket();
 					break;
-				case 1000: // 同一uid重复登录
+				case 1000:
+				case 4000: // 同一uid重复登录
 					V5ClientAgent.getInstance().errorHandle(new V5KFException(V5ExceptionStatus.ExceptionConnectRepeat, "connection is cut off by same u_id"));
 					break;
+				case 1005: //
+				case 1006: // (websocket关闭前一连接abnormal)
+					break;
 				default:
-					connectWebsocket();
-					V5ClientAgent.getInstance().errorHandle(new V5KFException(V5ExceptionStatus.ExceptionConnectionError, "[" + code + "]" + reason));
+//					connectWebsocket();
+//					V5ClientAgent.getInstance().errorHandle(new V5KFException(V5ExceptionStatus.ExceptionConnectionError, "[" + code + "]" + reason));
 					break;
 				}
 			} else {
 				V5ClientAgent.getInstance().errorHandle(new V5KFException(V5ExceptionStatus.ExceptionNoNetwork, "no network"));
 			}
 		}
-		
-		_block = false;
 	}
 
 	@Override
 	public void onError(Exception error) {
+		_connectBlock = false;
 		if (mClient == null) {
 			Logger.e(TAG, "[onError] mClient == null");
 			return;
 		}
-		Logger.e(TAG, ">>>onError<<<status code:" + mClient.getStatusCode() + " " + error.getMessage());
+		Logger.e(TAG, error.getClass() + ">>>onError<<<status code:" + mClient.getStatusCode() + " " + error.getMessage());
 		if (mClient != null && mClient.isConnected()) {
 			mClient.disconnect();
 		}
@@ -560,15 +559,15 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 			// 不重连
 			stopSelf();
 		} else {
-			if (!NetworkManager.isConnected(this)) {
+			if (!NetworkManager.isConnected(this) || (error instanceof UnknownHostException)) {
 				V5ClientAgent.getInstance().errorHandle(new V5KFException(V5ExceptionStatus.ExceptionNoNetwork, "no network"));
 			} else {
 				if (mClient.getStatusCode() == 406 || mClient.getStatusCode() == 404) {
-					Logger.d(TAG, "onError mReAuthCount:" + mReAuthCount);
-					if (mReAuthCount < 3) {
+					Logger.d(TAG, "onError mReAuthCount:" + mRetryCount);
+					if (mRetryCount < 3) {
 						try {
 							V5ClientAgent.getInstance().doAccountAuth();
-							mReAuthCount++;
+							mRetryCount++;
 						} catch (JSONException e) {
 							//e.printStackTrace();
 							Log.e(TAG, "", e);
@@ -579,9 +578,17 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 					}
 				} else if (error.getMessage().toLowerCase(Locale.getDefault()).contains("timed out") ||
 						error.getMessage().toLowerCase(Locale.getDefault()).contains("timeout") ||
-						error.getMessage().toLowerCase(Locale.getDefault()).contains("time out")) { // 条件不充足
-					V5ClientAgent.getInstance().errorHandle(new V5KFException(
-							V5ExceptionStatus.ExceptionSocketTimeout, "[" + mClient.getStatusCode() + "]" + error.getMessage()));
+						error.getMessage().toLowerCase(Locale.getDefault()).contains("time out") ||
+						(error instanceof SocketTimeoutException)) { // [超时]条件不充足
+					if (mRetryCount < 3) {
+						if (mClient != null) {
+							mClient.disconnect();
+						}
+						mHandler.sendEmptyMessageDelayed(HDL_CONNECT, 50);
+					} else {
+						V5ClientAgent.getInstance().errorHandle(new V5KFException(
+								V5ExceptionStatus.ExceptionSocketTimeout, "[" + mClient.getStatusCode() + "]" + error.getMessage()));
+					}
 				} else {
 					//connectWebsocket(); //[修改]取消自动重连(死循环),在Activity中处理
 					V5ClientAgent.getInstance().errorHandle(new V5KFException(
@@ -589,7 +596,5 @@ public class V5ClientService extends Service implements NetworkListener, WebSock
 				}
 			}
 		}
-		
-		_block = false;
 	}
 }

@@ -114,11 +114,11 @@ public class QFaceiconUtil {
 		faceMap.put("/:turn", "qf097");
 		faceMap.put("/:skip", "qf098");
 		faceMap.put("/:&>", "qf099");
-//		faceMap.put("/:#-0", "qf100");
-//		faceMap.put("/:hiphot", "qf101");
-//		faceMap.put("/:kiss", "qf102");
-//		faceMap.put("/:<&", "qf103");
-//		faceMap.put("/:oY", "qf104");
+		faceMap.put("/:#-0", "qf100");
+		faceMap.put("/:hiphot", "qf101");
+		faceMap.put("/:kiss", "qf102");
+		faceMap.put("/:<&", "qf103");
+		faceMap.put("/:oY", "qf104");
 	};
 
 	public static void showQFaceText(TextView tv, CharSequence str, int size) {		

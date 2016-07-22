@@ -1,6 +1,7 @@
 package com.v5kf.client.lib;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -35,8 +36,8 @@ public class V5ClientAgent {
 	public static final String TAG = "ClientAgent";
 	public static final long OPEN_QUES_MAX_ID = 9999999999L;
 	
-	public final static String VERSION = "1.1.4"; // core_1.1.4_r0707
-	public final static String VERSION_DESC = "core_v1.1.4_r0707"; // core_1.1.4_r0707
+	public final static String VERSION = "1.1.5"; // core_1.1.5_r0719
+	public final static String VERSION_DESC = "core_v1.1.5_r0719"; // core_1.1.5_r0719
 	private static boolean isSDKInit = false;
 	private int isForeground = 0;
 	
@@ -335,7 +336,7 @@ public class V5ClientAgent {
 			Logger.e(TAG, "[V5ClientAgent->start] param null");
 			return;
 		}
-		if (Looper.myLooper() != null && V5ClientConfig.RUN_ON_UI_THREAD) {
+		if (Looper.myLooper() != null && V5ClientConfig.CALLBACK_ON_UI_THREAD) {
 			mHandler = new Handler(Looper.myLooper());
 			Logger.i(TAG, "The callbak method of MessageListener will run in the current UI thread");
 		} else {
@@ -928,7 +929,13 @@ public class V5ClientAgent {
 			if (imageMessage.getPic_url() == null && imageMessage.getFilePath() != null) {
 				V5ClientConfig config = V5ClientConfig.getInstance(mContext);
 				if (null != config && null != config.getAuthorization()) {
-					String url = V5ClientConfig.getPictureAuthURL() + config.getAuthorization();
+					String url;
+					try {
+						url = V5ClientConfig.getPictureAuthURL() + java.net.URLEncoder.encode(config.getAuthorization(), "utf-8");
+					} catch (UnsupportedEncodingException e) {
+						e.printStackTrace();
+						url = V5ClientConfig.getPictureAuthURL() + config.getAuthorization();
+					}
 					getPictureService(url, config.getAuthorization(), imageMessage, handler);
 				} else {
 					sendFailedHandle(handler, message, V5ExceptionStatus.ExceptionWSAuthFailed, "Authorization null, can't upload image");

@@ -49,8 +49,8 @@ public class WelcomeActivity extends Activity implements OnChatActivityListener 
 		// V5客服系统客户端配置
         V5ClientConfig config = V5ClientConfig.getInstance(WelcomeActivity.this);
         V5ClientConfig.SOCKET_TIMEOUT = 30000; // 超时30s
-        V5ClientConfig.DEBUG = false;
-        V5ClientConfig.USE_HTTPS = false; // 使用加密连接，默认true
+        V5ClientConfig.DEBUG = true;
+        V5ClientConfig.USE_HTTPS = true; // 使用加密连接，默认true
         config.setShowLog(true); // 显示日志，默认为true
         config.setLogLevel(V5ClientConfig.LOG_LV_DEBUG); // 显示日志级别，默认为全部显示
         

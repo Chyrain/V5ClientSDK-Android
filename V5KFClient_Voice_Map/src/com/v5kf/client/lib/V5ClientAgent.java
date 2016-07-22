@@ -1,6 +1,7 @@
 package com.v5kf.client.lib;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -42,8 +43,8 @@ public class V5ClientAgent {
 	public static final String TAG = "ClientAgent";
 	public static final long OPEN_QUES_MAX_ID = 9999999999L;
 	
-	public final static String VERSION = "1.1.4"; // 1.1.4_r0713
-	public final static String VERSION_DESC = "v1.1.4_r0713_map"; // v1.1.4_r0713
+	public final static String VERSION = "1.1.5"; // 1.1.5_r0722
+	public final static String VERSION_DESC = "v1.1.5_r0722_map"; // v1.1.5_r0722
 	private static boolean isSDKInit = false;
 	private int isForeground = 0;
 	
@@ -766,7 +767,7 @@ public class V5ClientAgent {
 					getMessageListener().onMessage(msg);
 				}
 			} else {
-				V5ClientAgent.getInstance().getPrologue();
+				V5ClientAgent.getInstance().getSiteInfo(true);
 			}
 		} else if (mode == ClientOpenMode.clientOpenModeAutoHuman) {
 			// 自动转人工客服
@@ -774,11 +775,15 @@ public class V5ClientAgent {
 		}
 	}
 	
+	public void updateSiteInfo() {
+		getSiteInfo(false);
+	}
+	
 	/**
 	 * 获得站点信息
 	 * @param context
 	 */
-	private void getPrologue() {
+	private void getSiteInfo(final boolean callback) {
 		if (mContext == null) {
 			Logger.e(TAG, "Client not start, please start by V5ClientAgent.getInstance().start");
 			//errorHandle(new V5KFException(V5ExceptionStatus.ExceptionUnknownError, "Client not start, please start by V5ClientAgent.getInstance().start"));
@@ -793,8 +798,11 @@ public class V5ClientAgent {
 					JSONObject json = new JSONObject(V5Util.decodeUnicode(responseString));
 					if (json.getString("state").equals("ok")) {
 						JSONObject robot = json.getJSONObject("robot");
-						String prologue = robot.getString("intro");							
-						if (null != prologue) {
+						String prologue = robot.optString("intro");
+						getConfig().setRobotIntro(prologue);
+						getConfig().setRobotName(robot.optString("name"));
+						getConfig().setRobotPhoto(robot.optString("logo"));
+						if (null != prologue && callback) {
 							V5TextMessage msg = V5MessageManager.getInstance().obtainTextMessage(prologue);
 							msg.setDirection(V5MessageDefine.MSG_DIR_FROM_ROBOT);
 							msg.setSession_start(mSessionStart);
@@ -838,8 +846,7 @@ public class V5ClientAgent {
 	
 	public void onAppGoForeGround() {
 		Logger.w(TAG, "[onAppGoForeGround]");
-		mSessionStart = V5Util.getCurrentLongTime();
-		V5ClientConfig.NOTIFICATION_SHOW = false;
+//		V5ClientConfig.NOTIFICATION_SHOW = false;
 		if (mContext == null) {
 			//errorHandle(new V5KFException(V5ExceptionStatus.ExceptionUnknownError, "Client not start, please start by V5ClientAgent.getInstance().start"));
 			return;
@@ -852,16 +859,17 @@ public class V5ClientAgent {
 			// [修改]点击通知 重新获取消息
 			/* onStart -> 刷新最新会话数据 */
 			this.updateMessages();
-		} else {
-			V5ClientService.reConnect(mContext);
+		} else if (mSessionStart != 0) {
+			reconnect();
 //			Intent i = new Intent(mContext, V5ClientService.class);
 //			mContext.startService(i);
 		}
+//		mSessionStart = V5Util.getCurrentLongTime();
 	}
 	
 	public void onAppGoBackground() {
 		Logger.w(TAG, "[onAppGoBackground]");
-		V5ClientConfig.NOTIFICATION_SHOW = true;
+//		V5ClientConfig.NOTIFICATION_SHOW = true;
 		if (mConfigSP != null && mConfigSP.readAppPush() == 0) {
 			return;
 		}
@@ -922,9 +930,7 @@ public class V5ClientAgent {
 //		}
 		
 		mSessionStart = 0;
-		mMessageListener = null;
-		mContext = null;
-		
+//		V5ClientService.stop();
 		if (mContext != null) {
 			Logger.w(TAG, "[onDestroy] -> stopService");
 			Intent i = new Intent(mContext, V5ClientService.class);
@@ -932,9 +938,11 @@ public class V5ClientAgent {
 			
 			Intent stopIntent = new Intent(V5ClientService.ACTION_STOP);
 			// 通过广播发送给ws服务
-			LocalBroadcastManager.getInstance(mContext).sendBroadcast(stopIntent);
+			mContext.sendBroadcast(stopIntent);
 		}
-		V5ClientService.stop();
+
+		mMessageListener = null;
+		mContext = null;
 	}
 	
 	/**
@@ -956,7 +964,13 @@ public class V5ClientAgent {
 			if (imageMessage.getPic_url() == null && imageMessage.getFilePath() != null) {
 				V5ClientConfig config = V5ClientConfig.getInstance(mContext);
 				if (null != config && null != config.getAuthorization()) {
-					String url = V5ClientConfig.getPictureAuthURL() + config.getAuthorization();
+					String url;
+					try {
+						url = V5ClientConfig.getPictureAuthURL() + java.net.URLEncoder.encode(config.getAuthorization(), "utf-8");
+					} catch (UnsupportedEncodingException e) {
+						e.printStackTrace();
+						url = V5ClientConfig.getPictureAuthURL() + config.getAuthorization();
+					}
 					getPictureService(url, config.getAuthorization(), imageMessage, handler);
 				} else {
 					sendFailedHandle(handler, message, V5ExceptionStatus.ExceptionWSAuthFailed, "Authorization null, can't upload image");
@@ -1011,7 +1025,7 @@ public class V5ClientAgent {
 		sendIntent.putExtra("v5_message", json);
 		sendIntent.setAction(V5ClientService.ACTION_SEND);
 		// 通过广播发送给ws服务
-		LocalBroadcastManager.getInstance(mContext).sendBroadcast(sendIntent);
+		mContext.sendBroadcast(sendIntent);
 	}
 	
 	public void transferHumanService(int gid, int wid) {

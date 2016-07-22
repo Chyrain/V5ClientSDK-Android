@@ -140,6 +140,23 @@ public class WebSocketClient {
                     String path = TextUtils.isEmpty(mURI.getPath()) ? "/" : mURI.getPath();
                     if (!TextUtils.isEmpty(mURI.getQuery())) {
                         path += "?" + mURI.getQuery();
+                        
+                        /* 对auth进行urlencode */
+                        int indexQ = path.indexOf("?auth=");
+                        int indexA = path.indexOf("&auth=");
+                        if (indexQ != -1) {
+                        	String keyword = "?auth=";
+	                        String auth = path.substring(indexQ + keyword.length());
+	                        path = path.substring(0, indexQ);
+	                        auth = java.net.URLEncoder.encode(auth, "utf-8");
+	                        path = path + keyword + auth;
+                        } else if (indexA != -1) {
+                        	String keyword = "&auth=";
+	                        String auth = path.substring(indexA + keyword.length());
+	                        path = path.substring(0, indexA);
+	                        auth = java.net.URLEncoder.encode(auth, "utf-8");
+	                        path = path + keyword + auth;
+                        }
                     }
 
                     String originScheme = mURI.getScheme().equals("wss") ? "https" : "http";

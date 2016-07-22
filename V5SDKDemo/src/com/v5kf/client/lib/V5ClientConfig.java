@@ -18,7 +18,7 @@ public class V5ClientConfig {
 	public static final int LOG_LV_DEBUG = 4;
 	public static final int LOG_LV_VERBOS = 5;
 	
-	public static boolean RUN_ON_UI_THREAD = true;
+	public static boolean CALLBACK_ON_UI_THREAD = true;
 	public static boolean UI_SUPPORT = false; // 是否需要UI显示，无UI则不需要getCurrentMessages和getStatus
 	
 	private static int LOG_LEVEL = LOG_LV_VERBOS; // 日志显示级别

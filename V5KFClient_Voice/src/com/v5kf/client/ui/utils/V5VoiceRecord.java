@@ -117,7 +117,7 @@ public class V5VoiceRecord {
        } else {
     	   mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.RAW_AMR);
        }
-         
+       
         /* 设置音频文件的编码：AAC/AMR_NB/AMR_MB/Default */
        mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
          
