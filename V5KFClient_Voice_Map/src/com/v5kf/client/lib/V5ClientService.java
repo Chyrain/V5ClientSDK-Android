@@ -26,7 +26,6 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.v5kf.client.lib.NetworkManager.NetworkListener;
@@ -187,7 +186,7 @@ public class V5ClientService extends Service implements NetworkListener, Websock
 //			Logger.i(TAG, "[connectWebsocket] -> mClient != null && mClient.isConnected() = true");
 //			if (forceNew) {
 ////				Logger.i(TAG, "disconnect and then forceNew client");
-////				mClient.disconnect(1, "Stop and new client");
+////				mClient.disconnect(4001, "Stop and new client");
 //				mClient.disconnect();
 //				mClient = null;
 //				mUrl = String.format(Locale.CHINA, V5ClientConfig.getWSFormstURL(), config.getAuthorization()); 
@@ -290,6 +289,7 @@ public class V5ClientService extends Service implements NetworkListener, Websock
 		public void handleMessage(Message msg) {
 			if (null == mService.get()) {
 				Logger.w(TAG, "ServiceHandler has bean GC");
+				return;
 			}
 			switch (msg.what) {
 			case HDL_CONNECT:
@@ -352,7 +352,7 @@ public class V5ClientService extends Service implements NetworkListener, Websock
 
 	public void sendMessage(String msg) {
 		Logger.d(TAG, ">>>sendMessage<<< :" + msg);
-		if (mClient != null && mClient.isConnected()) {
+		if (isConnected()) {
 			mClient.send(msg);
 			Logger.i(TAG, ">>>sendMessage<<<:" + msg);
 		} else {
@@ -521,11 +521,11 @@ public class V5ClientService extends Service implements NetworkListener, Websock
 				switch (code) {
 				case -1: // 正常关闭，不重连
 					break;
-				case 1:
+				case 4001: // 手动强制重新连接
 					mClient = null;
 					connectWebsocket();
 					break;
-				case 1000:
+				case 1000: // 因本设备重复连接被断开
 				case 4000: // 同一uid重复登录
 					V5ClientAgent.getInstance().errorHandle(new V5KFException(V5ExceptionStatus.ExceptionConnectRepeat, "connection is cut off by same u_id"));
 					break;
@@ -551,7 +551,7 @@ public class V5ClientService extends Service implements NetworkListener, Websock
 			return;
 		}
 		Logger.e(TAG, error.getClass() + ">>>onError<<<status code:" + mClient.getStatusCode() + " " + error.getMessage());
-		if (mClient != null && mClient.isConnected()) {
+		if (isConnected()) {
 			mClient.disconnect();
 		}
 		
